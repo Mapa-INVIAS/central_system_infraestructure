@@ -1,0 +1,16 @@
+{% extends 'index.html' %}
+
+{% block content %}
+
+<h1>Demo pandas</h1>
+<h3>Este es la forma de trabajar con la libreria en la arquitectura del sistema.</h3>
+
+<div>
+    <ul>
+        {% for data in result %}
+        <li>{{ data.name }} &rarr; {{ data.team }}</li>
+        {% endfor %}  
+    </ul>
+</div>
+
+{% endblock %}

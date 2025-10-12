@@ -1,0 +1,52 @@
+/* General styles */
+    html,
+    body {
+      padding: 0;
+      margin: 0;
+      height: 100%;
+      width: 100%;
+    }
+
+
+/* Map styles */
+
+    #terrainAnalysisDiv {
+      background-color: var(--calcite-color-background);
+      padding: 10px;
+      overflow-y: auto;
+    }
+
+    #compassRoseDiv {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-evenly;
+    }
+
+    #compassRoseSvg {
+      width: 130px;
+    }
+
+    #compassRoseSvg text {
+      fill: var(--calcite-color-text-1);
+      font-size: 6px;
+    }
+
+    .roseDirection {
+      fill: none;
+      stroke: var(--calcite-color-border-input);
+      stroke-width: 1px;
+      pointer-events: all;
+      cursor: pointer;
+    }
+
+    .roseDirection.active {
+      fill: var(--calcite-color-brand);
+    }
+
+    #colorButton {
+      border: 1px solid var(--calcite-color-border-input);
+      width: 35px;
+      height: 25px;
+      background-color: rgb(0, 122, 194);
+      cursor: pointer;
+    }

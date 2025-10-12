@@ -1,0 +1,12 @@
+{% extends 'index.html' %}
+
+{% block content %}
+
+<h1>Demo tqdm</h1>
+<h3>Este es la forma de trabajar con la libreria en la arquitectura del sistema.</h3>
+
+{% for count in ps %}
+    <li>{{ count }}</li>
+{% endfor %}
+
+{% endblock %}

@@ -2,6 +2,7 @@ import time
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.http import HttpResponse
+from django.conf import settings
 
 #====================#
 ### Demo libraries ###
@@ -61,3 +62,28 @@ def demo_tqdm(request):
 
 #========================================================#
 # R libraries #
+import rpy2.robjects as robjects
+from django.shortcuts import render
+import io
+import sys
+from rpy2.robjects.packages import importr
+
+def demo_dismo(request):
+    output_data = ""
+    try:
+        # Importar paquete stats
+        stats = importr('stats')
+
+        # Crear vector en R
+        robjects.r('numeros <- c(10, 15, 20, 25, 30)')
+
+        # Calcular media y desviación estándar usando funciones del paquete stats
+        # media = robjects.r('mean(numeros)')[0]
+        # desviacion = stats.sd(robjects.r('numeros'))[0]
+
+        output_data = f"Lista de números: 10, 15, 20, 25, 30\nMedia: \nDesviación estándar:"
+
+    except Exception as e:
+        output_data = f"Error al ejecutar código R: {e}"
+
+    return render(request, 'R_cran/demo_dismo.html', {'output_data': output_data})

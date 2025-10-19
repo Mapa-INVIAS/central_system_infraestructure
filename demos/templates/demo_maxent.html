@@ -1,0 +1,42 @@
+{% extends 'index.html' %}
+{% load static %}
+
+{% block content %}
+
+<h1>Demo maxent</h1>
+<h3>Este es la forma de trabajar con la libreria en la arquitectura del sistema.</h3>
+
+<img src="{% static 'backend/img/descargar.jpeg' %}" alt="">
+
+<!-- templates/geoprocesamiento/resultado.html -->
+<h2>¡Procesamiento completado!</h2>
+<p>
+  <a href="/media/{{ csv_path }}" download>Descargar puntos.csv</a>
+</p>
+
+{% if tabla %}
+  <h3>Vista previa de los puntos generados:</h3>
+  <table border="1" cellpadding="5" cellspacing="0">
+    <thead>
+      <tr>
+        {% for col in columnas %}
+          <th>{{ col }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for fila in tabla %}
+        <tr>
+          {% for col in columnas %}
+            <td></td>
+          {% endfor %}
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <p>No se pudo cargar el archivo CSV.</p>
+{% endif %}
+
+
+{% endblock %}

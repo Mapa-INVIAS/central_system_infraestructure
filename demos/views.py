@@ -1,4 +1,4 @@
-import time
+import time, os
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.http import HttpResponse
@@ -45,7 +45,7 @@ def demo_geopandas(request):
     return render(request, 'demo_geopandas.html', {'gdf': gdf})
 
 def demo_rasterio(request):
-    with rasterio.open('.\static\img\gadas.tif') as dataset:
+    with rasterio.open('.\static/backend\img\gadas.tif') as dataset:
         mask = dataset.dataset_mask()
         for geom, val in rasterio.features.shapes(
             mask, transform=dataset.transform):
@@ -60,30 +60,89 @@ def demo_tqdm(request):
         time.sleep(0.5)
     return HttpResponse(count)
 
+
+#########################
+import traceback
+from django.http import JsonResponse, HttpResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.shortcuts import render
+from django.conf import settings
+from .utils.maxent02 import MaxEntWorkflow  # importa tu clase
+import os
+#########################
+
+# Import seguro de rpy2 conversion
+from rpy2.robjects import conversion
+try:
+    from rpy2.robjects.conversion import _converter as rpy2_converter  # para versiones nuevas
+except ImportError:
+    from rpy2.robjects import default_converter as rpy2_converter  # versiones antiguas
+
+def demo_maxent(request, project_name):
+    
+    """
+    Vista para ejecutar el flujo completo de MaxEnt en un proyecto dado.
+    Llama directamente a la clase MaxEntWorkflow y maneja el contexto de rpy2.
+    """
+
+    if request.method != "GET":
+        return JsonResponse({"error": "Método no permitido. Usa GET."}, status=405)
+
+    try:
+        # Crear la instancia del flujo
+        workflow = MaxEntWorkflow(project_name=project_name)
+
+        # Forzar el contexto de conversión de rpy2 (clave para evitar el error de contextvars)
+        with conversion.localconverter(rpy2_converter):
+            workflow.run()
+
+        return JsonResponse({
+            "status": "ok",
+            "message": f"Proyecto {project_name} procesado correctamente.",
+            "result_path": os.path.join(settings.MEDIA_URL, "maxent_projects", project_name, workflow.result_folder)
+        })
+
+    except Exception as e:
+        traceback_str = traceback.format_exc()
+        print(traceback_str)
+        return JsonResponse({
+            "status": "error",
+            "message": str(e),
+            "traceback": traceback_str
+        }, status=500)
+
+
 #========================================================#
 # R libraries #
 import rpy2.robjects as robjects
-from django.shortcuts import render
-import io
-import sys
-from rpy2.robjects.packages import importr
+from rpy2.robjects import r, default_converter
+from rpy2.robjects.conversion import localconverter
+from django.http import HttpResponse
 
 def demo_dismo(request):
-    output_data = ""
-    try:
-        # Importar paquete stats
-        stats = importr('stats')
+    robjects.r('''
+    set.seed(123)
+    valores <- sample(1:100, 10)
+    promedio <- mean(valores)
+    desviacion <- sd(valores)
+    ''')
 
-        # Crear vector en R
-        robjects.r('numeros <- c(10, 15, 20, 25, 30)')
+    with localconverter(default_converter):
+        valores = robjects.r['valores']
+        promedio = robjects.r['promedio'][0]
+        desviacion = robjects.r['desviacion'][0]
 
-        # Calcular media y desviación estándar usando funciones del paquete stats
-        # media = robjects.r('mean(numeros)')[0]
-        # desviacion = stats.sd(robjects.r('numeros'))[0]
+    resultado = f"""
+    Lista de valores: {list(valores)}
+    Promedio: {promedio}
+    Desviación estándar: {desviacion}
+    """
 
-        output_data = f"Lista de números: 10, 15, 20, 25, 30\nMedia: \nDesviación estándar:"
+    # return HttpResponse(resultado)
 
-    except Exception as e:
-        output_data = f"Error al ejecutar código R: {e}"
+    return render(request, 'R_cran/demo_dismo.html', {'resultado': resultado})
 
-    return render(request, 'R_cran/demo_dismo.html', {'output_data': output_data})
+
+    # https://copilot.microsoft.com/chats/Vjk6tHqi3JtriP2H1xZA3
+
+

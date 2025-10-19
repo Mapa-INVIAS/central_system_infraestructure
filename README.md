@@ -2,7 +2,7 @@
 
 python3 -m venv venv
 pip install -r requirements.txt
-python3 -m manage.py runserver
+python -m manage.py runserver
 
 # Pasos para instalación de R en el server
 
@@ -27,3 +27,10 @@ conda create -n r_env python=3.10 r-base rpy2 -c conda-forge
 conda activate r_env
 
 python script.py
+
+##############################
+
+conda install -c conda-forge r-base [package]
+conda activate r_env
+
+

@@ -143,6 +143,48 @@ def demo_dismo(request):
     return render(request, 'R_cran/demo_dismo.html', {'resultado': resultado})
 
 
-    # https://copilot.microsoft.com/chats/Vjk6tHqi3JtriP2H1xZA3
+# https://copilot.microsoft.com/chats/Vjk6tHqi3JtriP2H1xZA3
+#==========================================================#
+import ee
+import geemap
+
+# try:
+#     ee.Initialize()
+# except Exception as e:
+#     ee.Authenticate()
+#     ee.Initialize()
+
+# Google Earth Engine #
+
+# Inicializa Earth Engine
+geemap.ee_initialize(project="complete-energy-448804-i2")
+
+def demo_gee(request):
+    # Crea el mapa sin inicializar Earth Engine (ya lo hicimos arriba)
+    Map = geemap.Map(ee_initialize=False)
+    
+    # Puedes agregar capas aquí si lo deseas
+    image = ee.Image('CGIAR/SRTM90_V4')
+    vis_params = {'min': 0, 'max': 3000, 'palette': ['blue', 'green', 'red']}
+    Map.addLayer(image, vis_params, 'SRTM Elevation')
+
+    # Convierte el mapa en HTML
+    map_html = Map.to_html()
+    return render(request, 'gee/map.html', {'map_html': map_html})
 
 
+# Arcgis demo
+# def demo_arcgis(request):
+#     layer_url = "https://storage.googleapis.com/invias/maps_invias/map.geojson"
+#     return render(request, "gee/arcgis.html", {"layer_url": layer_url})
+
+import requests
+from django.http import JsonResponse
+# Arcgis demo
+def demo_arcgis(request):
+    layer_url = 'https://storage.googleapis.com/invias/maps_invias/map.geojson'
+    response = requests.get(layer_url)
+    if response.status_code == 200:
+        return JsonResponse(response.json(), safe=False)
+        #  return render(request, 'gee/arcgis.html', {"layer_url": layer_url})
+    return JsonResponse({'error': 'No se pudo obtener el archivo'}, status=500)

@@ -13,7 +13,10 @@ urlpatterns = [
     path('maxent/<str:project_name>/', views.demo_maxent, name="ejecutar_maxent"),
     #===== R libraries ======#
     path('rcran/dismo', views.demo_dismo),
-
     #===== Google Earth Engine =====#
+    # path('gee/map', views.demo_gee),
+    # path('gee/map/', views.demo_gee.as_view(), name='map-view'),
+    path('gee/map/', views.demo_gee),
+    path('gee/arcgis', views.demo_arcgis),
     
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

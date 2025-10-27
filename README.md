@@ -30,7 +30,19 @@ https://www.anaconda.com/download
 
 # Instalación de paquetes del proyecto con Conda
 
-- conda install -c conda-forge r-base [package]
+- conda install -c conda-forge r_env [package] <!-- verificar cuales son las librerias que se requieren instalar o correr el archivo requirements.txt en conda -->
 - conda activate r_env
 
+# Creación de archivo de requisitos
+
+- pip freeze > requirements.txt
+- conda list --export > requirements.txt
+
+# Permisos de acceso
+
+- earthengine authenticate <!-- Esta línea se debe ejecutar en la terminal -->
+
+<!-- Verificar en el folder que se crearon las credenciales -->
+
+- ~/.config/earthengine/credentials
 

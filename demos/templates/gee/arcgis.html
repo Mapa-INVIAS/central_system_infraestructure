@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Map Viewer</title>
+  <link rel="stylesheet" href="https://js.arcgis.com/4.28/esri/themes/light/main.css">
+  <script src="https://js.arcgis.com/4.28/"></script>
+</head>
+<body>
+  <div id="viewDiv" style="height: 100vh;"></div>
+  <script>
+    require(["esri/Map", "esri/views/MapView", "esri/layers/GeoJSONLayer"], function(Map, MapView, GeoJSONLayer) {
+      const layer = new GeoJSONLayer({
+        url: "{{ layer_url }}"
+      });
+
+      const map = new Map({
+        basemap: "streets",
+        layers: [layer]
+      });
+
+      const view = new MapView({
+        container: "viewDiv",
+        map: map,
+        center: [-74.08175, 4.60971], // Bogotá
+        zoom: 12
+      });
+    });
+  </script>
+</body>
+</html>

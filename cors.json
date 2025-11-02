@@ -1,0 +1,10 @@
+
+    [
+      {
+        "origin": ["http://127.0.0.1:8000"],
+        "responseHeader": ["Content-Type"],
+        "method": ["GET", "HEAD"],
+        "maxAgeSeconds": 3600
+      }
+    ]
+    

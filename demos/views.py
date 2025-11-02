@@ -178,13 +178,80 @@ def demo_gee(request):
 #     layer_url = "https://storage.googleapis.com/invias/maps_invias/map.geojson"
 #     return render(request, "gee/arcgis.html", {"layer_url": layer_url})
 
+# import requests
+# from django.http import JsonResponse
+# # Arcgis demo
+# def demo_arcgis(request):
+#     layer_url = 'https://storage.googleapis.com/invias/maps_invias/map.geojson'
+#     response = requests.get(layer_url)
+#     if response.status_code == 200:
+#         # return JsonResponse(response.json(), safe=False)
+#         return render(request, 'gee/arcgis.html', {"layer_url": layer_url})
+#     return JsonResponse({'error': 'No se pudo obtener el archivo'}, status=500)
+
+# def demo_arcgis(request):
+#     geojson_url = 'https://storage.googleapis.com/invias/maps_invias/map.geojson'
+#     return render(request, 'gee/arcgis.html', {'geojson_url': geojson_url})
+
+
+# import requests
+# from django.http import JsonResponse
+# from django.views.decorators.csrf import csrf_exempt
+# from django.views.decorators.http import require_GET
+# from django.views.decorators.clickjacking import xframe_options_exempt
+
+# @csrf_exempt
+# @require_GET
+# @xframe_options_exempt
+# def demo_arcgis(request):
+#     # URL del archivo GeoJSON en Google Cloud Storage
+#     geojson_url = 'https://storage.googleapis.com/invias/maps_invias/map.geojson'
+
+#     try:
+#         response = requests.get(geojson_url)
+#         if response.status_code == 200:
+#             return JsonResponse(response.json(), safe=False)
+#         else:
+#             return JsonResponse({'error': 'No se pudo obtener el archivo'}, status=500)
+#     except Exception as e:
+#         return JsonResponse({'error': str(e)}, status=500)
+
 import requests
 from django.http import JsonResponse
-# Arcgis demo
+
 def demo_arcgis(request):
-    layer_url = 'https://storage.googleapis.com/invias/maps_invias/map.geojson'
-    response = requests.get(layer_url)
+    url = "https://storage.googleapis.com/invias/maps_invias/mapa.geojson"
+    response = requests.get(url)
     if response.status_code == 200:
-        return JsonResponse(response.json(), safe=False)
-        #  return render(request, 'gee/arcgis.html', {"layer_url": layer_url})
-    return JsonResponse({'error': 'No se pudo obtener el archivo'}, status=500)
+        data = response.json()
+        print('hola', data)
+        # return JsonResponse(response.json(), safe=False)
+        return render(request, 'gee/arcgis.html', {'data': data})
+    return JsonResponse({"error": "No se pudo obtener el archivo"}, status=500)
+
+# def demo_arcgis(request):
+#     geojson_url = 'https://storage.googleapis.com/invias/maps_invias/map.geojson'
+#     return render(request, 'gee/arcgis.html', {'geojson_url': geojson_url})
+
+# import subprocess
+
+# def demo_arcgis(bucket_name):
+#     cors_config = """
+#     [
+#       {
+#         "origin": ["http://127.0.0.1:8000"],
+#         "responseHeader": ["Content-Type"],
+#         "method": ["GET", "HEAD"],
+#         "maxAgeSeconds": 3600
+#       }
+#     ]
+#     """
+#     with open("cors.json", "w") as f:
+#         f.write(cors_config)
+    
+#     subprocess.run(["gsutil", "cors", "set", "cors.json", f"gs://{bucket_name}"])
+#     print(f"CORS configurado para el bucket: {bucket_name}")
+
+def danger(request):
+    return render(request, 'danger.html')
+

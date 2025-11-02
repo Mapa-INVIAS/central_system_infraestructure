@@ -14,9 +14,8 @@ urlpatterns = [
     #===== R libraries ======#
     path('rcran/dismo', views.demo_dismo),
     #===== Google Earth Engine =====#
-    # path('gee/map', views.demo_gee),
-    # path('gee/map/', views.demo_gee.as_view(), name='map-view'),
     path('gee/map/', views.demo_gee),
     path('gee/arcgis', views.demo_arcgis),
+    path('real/danger', views.danger)
     
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

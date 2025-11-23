@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<main>
+    <!-- <div class="container">
+        <h2>Sube una imagen para aplicar difusión</h2>
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  <input type="file" name="image" accept="image/*">
+  <button type="submit">Procesar</button>
+</form>
+
+    </div> -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Filtro de Color</title>
+</head>
+<body>
+    <h2>Subir imagen para aplicar filtro</h2>
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        <label for="image">Selecciona una imagen:</label>
+        <input type="file" name="image" id="image" accept="image/*" required>
+        <br><br>
+        <button type="submit">Procesar imagen</button>
+    </form>
+</body>
+</html>
+
+
+</main>
+
+{% endblock %}

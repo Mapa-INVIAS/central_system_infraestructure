@@ -12,9 +12,9 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 import os
 from pathlib import Path
 
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -72,6 +72,7 @@ INSTALLED_APPS = [
     'frontend',
     'backend',
     'demos',
+    'clase',
 ]
 
 MIDDLEWARE = [
@@ -157,6 +158,9 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 # STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
@@ -174,6 +178,90 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Google storage
+
+from google.oauth2 import service_account
+from google.cloud import storage
+
 DEFAULT_FILE_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
 GS_BUCKET_NAME = 'invias'
 GS_PROJECT_ID = 'complete-energy-448804-i2'
+
+
+# Credentials
+GS_CREDENTIALS = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
+
+# Enlace de archivos
+# MEDIA_URL = f'https://storage.googleapis.com/{GS_BUCKET_NAME}/'
+
+
+######################################################################
+######################################################################
+
+# # Ruta al archivo JSON
+# ruta_credenciales = "C:\Program Files\Ampps\www\inviasvivo\inviasvivo\credentials\credentials.json"
+
+# print(ruta_credenciales)
+
+# Crear credenciales
+# credentials = service_account.Credentials.from_service_account_file(ruta_credenciales)
+
+
+# credentials = service_account.Credentials.from_service_account_file(
+#     "credentials/credentials.json"
+# )
+
+# client = storage.Client(credentials=credentials)
+# bucket = client.bucket("invias")
+
+# print('directorio'+os.getcwd()+'\credentials')
+# print(os.path.exists(os.getcwd()+'/credentials/credentials.json'))
+
+# from google.cloud import storage
+
+# def read_gcs_file_line_by_line(bucket_name, file_name):
+#     client = storage.Client()
+
+#     bucket = client.bucket(bucket_name)
+#     blob = bucket.blob(file_name)
+#     content = blob.download_as_text()
+
+#     for line in content.splitlines():
+#         print(line)
+
+# read_gcs_file_line_by_line("invias", "maps_invias/mapa.geojson")
+
+
+
+#####################################################################
+#####################################################################
+#===================================================================# 
+# def read_all_files_in_directory(bucket_name, prefix):
+#     client = storage.Client()
+#     bucket = client.bucket(bucket_name)
+
+#     blobs = bucket.list_blobs(prefix=prefix)
+
+#     for blob in blobs:
+#         print(f"\n=== Leyendo archivo: {blob.name} ===")
+
+#         content = blob.download_as_text()
+#         for line in content.splitlines():
+#             print(line)
+
+# read_all_files_in_directory("invias", "maps_invias/geojson/")
+
+
+##########################################################################
+#========================================================================#
+# def list_blobs(bucket_name):
+#     """Lists all the blobs in the bucket."""
+#     # bucket_name = "your-bucket-name"
+#     storage_client = storage.Client()
+#     blobs = storage_client.list_blobs(bucket_name)
+
+    
+#     for blob in blobs:
+#         print(blob.name)
+
+
+# list_blobs('invias')

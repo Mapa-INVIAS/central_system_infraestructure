@@ -3,6 +3,11 @@ from django.shortcuts import render
 from django.http import JsonResponse
 from django.http import HttpResponse
 from django.conf import settings
+from google.cloud import storage
+from google.cloud.storage import transfer_manager
+
+
+
 
 #====================#
 ### Demo libraries ###
@@ -224,34 +229,196 @@ def demo_arcgis(request):
     response = requests.get(url)
     if response.status_code == 200:
         data = response.json()
-        print('hola', data)
         # return JsonResponse(response.json(), safe=False)
         return render(request, 'gee/arcgis.html', {'data': data})
     return JsonResponse({"error": "No se pudo obtener el archivo"}, status=500)
 
-# def demo_arcgis(request):
-#     geojson_url = 'https://storage.googleapis.com/invias/maps_invias/map.geojson'
-#     return render(request, 'gee/arcgis.html', {'geojson_url': geojson_url})
-
-# import subprocess
-
-# def demo_arcgis(bucket_name):
-#     cors_config = """
-#     [
-#       {
-#         "origin": ["http://127.0.0.1:8000"],
-#         "responseHeader": ["Content-Type"],
-#         "method": ["GET", "HEAD"],
-#         "maxAgeSeconds": 3600
-#       }
-#     ]
-#     """
-#     with open("cors.json", "w") as f:
-#         f.write(cors_config)
-    
-#     subprocess.run(["gsutil", "cors", "set", "cors.json", f"gs://{bucket_name}"])
-#     print(f"CORS configurado para el bucket: {bucket_name}")
 
 def danger(request):
-    return render(request, 'danger.html')
+    # return render(request, 'danger.html')
+    url = "https://storage.googleapis.com/invias/maps_invias/raster.tif"
+    response = requests.get(url)
+    if response.status_code == 200:
+        return JsonResponse({"mensaje": "Archivo tiff leido"})
+    return JsonResponse({"error": "No se pudo obtener el archivo"}, status=500)
 
+
+def layer(request):
+    url = "https://storage.googleapis.com/invias/maps_invias/raster.tif"
+    return render(request, "layer.html", {"raster_url": url})
+
+
+# from google.cloud import storage
+
+# def leer_archivo(bucket_name, blob_name):
+#     client = storage.Client()
+#     bucket = client.bucket(bucket_name)
+#     blob = bucket.blob(blob_name)
+#     contenido = blob.download_as_text()
+#     return contenido
+
+# # Llamar la función y mostrar el resultado
+# bucket_name = "invias"
+# blob_name = "maps_invias/raster.tif"
+
+# resultado = leer_archivo(bucket_name, blob_name)
+# print("Contenido del archivo:")
+# print(resultado)
+
+
+# from google.cloud import storage
+# from google.oauth2 import service_account
+
+# # Ruta al archivo JSON
+# ruta_credenciales = "C:\Program Files\Ampps\www\inviasvivo\inviasvivo\credentials\credentials.json"
+
+# # Crear credenciales
+# credentials = service_account.Credentials.from_service_account_file(ruta_credenciales)
+
+# # Cliente con credenciales explícitas
+# client = storage.Client(credentials=credentials)
+# bucket = client.bucket("mi-bucket")
+# blob = bucket.blob("https://storage.googleapis.com/invias/maps_invias/raster.tif")
+# print(blob.download_as_text())
+
+
+# def list_blobs(bucket_name):
+#     """Lists all the blobs in the bucket."""
+#     # bucket_name = "your-bucket-name"
+
+#     storage_client = storage.Client()
+
+#     # Note: Client.list_blobs requires at least package version 1.17.0.
+#     blobs = storage_client.list_blobs(bucket_name)
+
+#     # Note: The call returns a response only when the iterator is consumed.
+#     for blob in blobs:
+#         print(blob.name)
+
+
+# list_blobs('invias')
+
+
+
+
+# def mi_funcion():
+#     print("La función se está ejecutando en este momento...")
+
+# intervalo_en_segundos = 10 
+# while True:
+#     list_blobs()
+#     time.sleep(intervalo_en_segundos)
+
+
+# 
+# def read_all_files_in_directory(bucket_name, prefix):
+#     client = storage.Client()
+#     bucket = client.bucket(bucket_name)
+
+#     blobs = bucket.list_blobs(prefix=prefix)
+
+#     for blob in blobs:
+#         print(f"\n=== Leyendo archivo: {blob.name} ===")
+
+#         content = blob.download_as_text()
+#         for line in content.splitlines():
+#             print(line)
+
+# read_all_files_in_directory("invias", "maps_invias/geojson/")
+
+
+def list_blobs(bucket_name):
+    """Lists all the blobs in the bucket."""
+    # bucket_name = "your-bucket-name"
+    storage_client = storage.Client()
+    blobs = storage_client.list_blobs(bucket_name)
+
+    
+    for blob in blobs:
+        print(blob.name)
+
+
+
+intervalo_en_segundos = 15 
+while True:
+    print('actualización de datos')
+    list_blobs('invias')
+    time.sleep(intervalo_en_segundos)
+    break
+
+
+# def download(descarga_invias):
+#     client = storage.Client()
+#     bucket = client.bucket('invias')
+#     # blob = bucket.blob('maps_invias/geojson/mapa1.geojson')
+#     blob = bucket.blob(descarga_invias)
+#     # content = blob.download_to_filename('nuevo_archivo.geojson')
+#     content = blob.download_as_bytes()
+
+#     ruta_destino = os.path.join(settings.MEDIA_ROOT, descarga_invias)
+#     os.makedirs(os.path.dirname(ruta_destino), exist_ok=True)
+
+#     with open(ruta_destino, 'wb') as f:
+#         f.write(content)
+
+#     print("descargado con exito")
+
+
+#     return ruta_destino
+
+
+# download("maps_invias/geojson/mapa1.geojson")
+
+# ========================================================================#
+# ________________________________________________________________________#
+
+# def download_bucket(bucket_name, prefix=None):
+#     client = storage.Client()
+#     bucket = client.bucket(bucket_name)
+#     blobs = bucket.list_blobs(prefix=prefix)
+
+#     print(blobs)
+
+#     for blob in blobs:
+#         ruta = os.path.join(settings.MEDIA_ROOT, blob.name)
+#         os.makedirs(os.path.dirname(ruta), exist_ok=True)
+
+#         with open("maps_invias", "w") as f:
+#             f.write(blob.download_to_filename(ruta))
+#             print(ruta)
+
+
+
+# print('si esta corriendo')       
+# download_bucket('invias', prefix="maps_invias/geojson/")
+
+def download_bucket_with_transfer_manager(
+    bucket_name, workers=8, max_results=None, prefix=None):
+
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(bucket_name)
+
+    blobs = bucket.list_blobs(max_results=max_results, prefix=prefix)
+    blob_names = [blob.name for blob in blobs]
+
+    destination_directory = settings.MEDIA_ROOT
+
+    results = transfer_manager.download_many_to_path(
+        bucket,
+        blob_names,
+        destination_directory=destination_directory,
+        max_workers=workers,
+    )
+
+    for name, result in zip(blob_names, results):
+        if isinstance(result, Exception):
+            print(f"❌ Error al descargar {name}: {result}")
+        else:
+            ruta_final = os.path.join(destination_directory, name)
+            print(f"✅ Descargado {name} -> {ruta_final}")
+
+    print("🎉 Todos los archivos descargados con éxito")
+
+
+print('si esta corriendo') 
+download_bucket_with_transfer_manager("invias")

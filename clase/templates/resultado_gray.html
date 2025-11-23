@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<main>
+    <section>
+        <h2 class="text-center">Resultado del filtro anisotrópico</h2>
+        <div class="row">
+            <div class="col">
+                <article>
+                    <div class="card" style="width: 18rem;">
+                        <img src="/media/{{ original }}" alt="Imagen original">
+                        <div class="card-body">
+                            <h5 class="card-title">Imagen original</h5>
+                        </div>
+                    </div>
+                </article>
+            </div>
+            <div class="col">
+                <article>
+                    <div class="card" style="width: 18rem;">
+                        <img src="/media/{{ resultado }}" alt="Imagen filtrada">
+                        <div class="card-body">
+                            <h5 class="card-title">Imagen filtrada</h5>
+                        </div>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </section>
+    <section>
+        <div class="row">
+            <div class="d-grid gap-2 my-4">
+                     <a class="btn btn-primary" href="">Regresar</a>
+                </div>
+        </div>
+    </section>
+</main>
+
+{% endblock %}

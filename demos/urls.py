@@ -16,6 +16,8 @@ urlpatterns = [
     #===== Google Earth Engine =====#
     path('gee/map/', views.demo_gee),
     path('gee/arcgis', views.demo_arcgis),
-    path('real/danger', views.danger)
+    path('real/danger', views.danger),
+    #===============================#
+    path('real/tiff', views.layer),
     
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

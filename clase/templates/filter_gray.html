@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="card">
+  <h2>Procesar Imagen</h2>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <div class="form-group">
+      <label for="imagen">Imagen:</label>
+      <input type="file" id="imagen" name="imagen" required>
+    </div>
+
+    <div class="form-group">
+      <label for="n_iter">Iteraciones:</label>
+      <input type="number" id="n_iter" name="n_iter" value="20">
+    </div>
+
+    <div class="form-group">
+      <label for="delta_t">Δt:</label>
+      <input type="text" id="delta_t" name="delta_t" value="0.15">
+    </div>
+
+    <div class="form-group">
+      <label for="kappa">Kappa:</label>
+      <input type="text" id="kappa" name="kappa" value="25">
+    </div>
+
+    <div class="form-group">
+      <label for="option">Conductancia:</label>
+      <select id="option" name="option">
+        <option value="1">Exponencial</option>
+        <option value="2">Inversa cuadrática</option>
+      </select>
+    </div>
+
+    <button type="submit">Procesar</button>
+  </form>
+  <div class="row">
+    <div class="col my-2">
+      <a class="btn btn-outline-success" href="{% url 'menu_index' %}">&larr; Regresar</a>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade container-fluid" id="myModal" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="myModalLabel">Indicaciones</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col">
+            <table class="table">
+            <thead class="text-center">
+              <tr>
+                <th scope="col">Tipo de imagen</th>
+                <th scope="col">kappa recomendado</th>
+                <th scope="col">delta recomendado</th>
+                <th scope="col">Iteraciones (n_iter)</th>
+                <th scope="col">Observaciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Naturales (paisajes, fotos cotidianas)</td>
+                <td>20–40</td>
+                <td>0.15–0.25</td>
+                <td>20–50</td>
+                <td>Suaviza ruido manteniendo bordes; valores altos de kappa preservan bordes más gruesos.</td>
+              </tr>
+              <tr>
+                <td>Médicas (radiografías, resonancias)</td>
+                <td>10–20</td>
+                <td>0.10–0.20</td>
+                <td>50–100</td>
+                <td>Se requiere mayor preservación de detalles finos; kappa bajo detecta bordes delicados.</td>
+              </tr>
+              <tr>
+                <td>Con mucho ruido (imágenes degradadas)</td>
+                <td>30–60</td>
+                <td>0.20–0.25</td>
+                <td>100–200</td>
+                <td>Más iteraciones para eliminar ruido; riesgo de perder detalles si kappa es demasiado bajo.</td>
+              </tr>
+              <tr>
+                <td>Artísticas o estilizadas</td>
+                <td>40–80</td>
+                <td>0.15–0.25</td>
+                <td>50–150</td>
+                <td>Se puede exagerar el suavizado para dar efecto pictórico; bordes se mantienen definidos.</td>
+              </tr>
+            </tbody>
+          </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% endblock %}

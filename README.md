@@ -31,12 +31,17 @@ https://www.anaconda.com/download
 # Instalación de paquetes del proyecto con Conda
 
 - conda install -c conda-forge r_env [package] <!-- verificar cuales son las librerias que se requieren instalar o correr el archivo requirements.txt en conda -->
+conda install conda-forge::[package] <!-- Para el caso de esta configuración -->
 - conda activate r_env
 
 # Creación de archivo de requisitos
 
 - pip freeze > requirements.txt
 - conda list --export > requirements.txt
+
+# Instalación de librerias del proyecto en el entorno virtual
+
+- conda install --file requirements.txt
 
 # Permisos de acceso
 
@@ -45,4 +50,11 @@ https://www.anaconda.com/download
 <!-- Verificar en el folder que se crearon las credenciales -->
 
 - ~/.config/earthengine/credentials
+
+<!-- Se correr este comando en la shell -->
+- export GOOGLE_APPLICATION_CREDENTIALS="/credentials/credentials.json"
+<!-- Para que sea permanente -->
+- setx GOOGLE_APPLICATION_CREDENTIALS "ruta\credentials\credentials.json"
+
+
 

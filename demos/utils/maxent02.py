@@ -16,16 +16,17 @@ from rpy2.robjects.vectors import StrVector
 
 
 class MaxEntWorkflow:
+    # Datos de entrada del modelo
     def __init__(self,
                  project_name,
-                 raster_folder="rasterIN",
+                 raster_folder="rasterIN", # entrada todos los rasteres alineados
                  crop_folder="Crop",
                  output_folder="output",
                  result_folder="RasterResult",
-                 hotspot_filename="atropellamiento.csv",
-                 output_sample_name="muestreo.csv",
-                 line_shp_name="vias.shp",
-                 buffer_dist=90,
+                 hotspot_filename="atropellamiento.csv", # sukubun procesada entrada
+                 output_sample_name="muestreo.csv", # salida
+                 line_shp_name="vias.shp", # entrada
+                 buffer_dist=90, # entrada
                  simplify_factor=30,
                  n_points=10000,
                  training_prob=0.8,

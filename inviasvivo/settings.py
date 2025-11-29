@@ -11,6 +11,10 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 import os
 from pathlib import Path
+# Google storage
+from google.oauth2 import service_account
+from google.cloud import storage
+
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -175,21 +179,19 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField' # Permiso para almacenamiento de datos de gran carga
+GS_CREDENTIALS = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS') # Accesos a la llave privada
 
-# Google storage
-
-from google.oauth2 import service_account
-from google.cloud import storage
-
-DEFAULT_FILE_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
-GS_BUCKET_NAME = 'invias'
-GS_PROJECT_ID = 'complete-energy-448804-i2'
+DEFAULT_FILE_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage' # Acceso al Google Cloud
+GS_BUCKET_NAME = 'invias' # Nombre del bucket objetivo
+GS_PROJECT_ID = 'complete-energy-448804-i2' # Identificador del bucket objetivo
 
 
+
+
+# GS_BUCKET_NAME = 'invias_mapa_vulnerabilidad_faunistica' # Nombre del bucket objetivo
+# GS_PROJECT_ID = 'geoinformatica-442522' # Identificador del bucket objetivo
 # Credentials
-GS_CREDENTIALS = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
-
 # Enlace de archivos
 # MEDIA_URL = f'https://storage.googleapis.com/{GS_BUCKET_NAME}/'
 

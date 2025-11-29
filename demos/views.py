@@ -333,16 +333,14 @@ def list_blobs(bucket_name):
     storage_client = storage.Client()
     blobs = storage_client.list_blobs(bucket_name)
 
-    
     for blob in blobs:
         print(blob.name)
-
 
 
 intervalo_en_segundos = 15 
 while True:
     print('actualización de datos')
-    list_blobs('invias')
+    list_blobs('invias_mapa_vulnerabilidad_faunistica')
     time.sleep(intervalo_en_segundos)
     break
 

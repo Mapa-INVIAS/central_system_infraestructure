@@ -41,6 +41,7 @@ conda install conda-forge::[package] <!-- Para el caso de esta configuración --
 
 # Instalación de librerias del proyecto en el entorno virtual
 
+- pip install -r requirements.txt
 - conda install --file requirements.txt
 
 # Permisos de acceso

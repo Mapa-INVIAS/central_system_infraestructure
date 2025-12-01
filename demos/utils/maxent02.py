@@ -16,23 +16,22 @@ from rpy2.robjects.vectors import StrVector
 
 
 class MaxEntWorkflow:
-    # Datos de entrada del modelo
     def __init__(self,
                  project_name,
-                 raster_folder="rasterIN", # entrada todos los rasteres alineados
+                 raster_folder="rasterIN",
                  crop_folder="Crop",
                  output_folder="output",
                  result_folder="RasterResult",
-                 hotspot_filename="atropellamiento.csv", # sukubun procesada entrada
-                 output_sample_name="muestreo.csv", # salida
-                 line_shp_name="vias.shp", # entrada
-                 buffer_dist=90, # entrada
+                 hotspot_filename="atropellamiento.csv",
+                 output_sample_name="muestreo.csv",
+                 line_shp_name="vias.shp",
+                 buffer_dist=90,
                  simplify_factor=30,
                  n_points=10000,
                  training_prob=0.8,
                  replicates=3):
 
-        self.basepath = os.path.join(settings.MEDIA_ROOT, "maxent_projects")
+        self.basepath = os.path.join(settings.MEDIA_ROOT, "maxent_invias")
         self.project_name = project_name
         self.project_path = os.path.join(self.basepath, project_name)
 
@@ -50,6 +49,19 @@ class MaxEntWorkflow:
         self.replicates = replicates
 
         os.makedirs(self.project_path, exist_ok=True)
+
+        self.jacknife_entries = {}
+
+        for i in range(1,6):
+        # while True:
+            region_path = os.path.join(settings.MEDIA_ROOT, "jacknife", f"region{i}")
+            if os.path.exists(region_path):
+                # self.jacknife_entries[f"region{i}"] = os.listdir(region_path)
+                self.jacknife_entries[f"region{i}"] = [
+                    os.path.join(region_path, entry) for entry in os.listdir(region_path)
+                ]
+            else:
+                self.jacknife_entries[f"region{i}"] = []
 
     # ----------------------
     # ETAPA 1: preparación
@@ -140,7 +152,7 @@ class MaxEntWorkflow:
         # Instalar paquetes necesarios si faltan
         utils = importr("utils")
         utils.chooseCRANmirror(ind=1)
-        paquetes = ["raster", "dismo", "readr", "sp", "sf"]
+        paquetes = ["raster", "dismo", "readr", "sp", "sf", "codetools", "rJava"]
         utils.install_packages(StrVector(paquetes))
 
         # Asignar variables de entorno
@@ -160,6 +172,12 @@ class MaxEntWorkflow:
         library(readr)
         library(sp)
         library(sf)
+        library(codetools)
+        library(rJava)
+        .jinit()
+
+        .jcall("java/lang/System", "S", "getProperty", "java.version")
+
 
         setwd(basepath)
         crop_path <- file.path(basepath, cropFolder)
@@ -205,3 +223,5 @@ class MaxEntWorkflow:
             print("Ejecución MaxEnt completada en R.")
         except Exception as e:
             print(f"Error en ejecución R: {e}")
+
+

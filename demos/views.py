@@ -1,10 +1,13 @@
 import time, os
 from django.shortcuts import render
-from django.http import JsonResponse
+from django.http import JsonResponse, FileResponse
 from django.http import HttpResponse
 from django.conf import settings
 from google.cloud import storage
 from google.cloud.storage import transfer_manager
+import rasterio
+from rasterio.features import shapes
+import json
 
 
 
@@ -83,7 +86,7 @@ try:
 except ImportError:
     from rpy2.robjects import default_converter as rpy2_converter  # versiones antiguas
 
-def demo_maxent(request, project_name):
+def demo_maxent(request, project_invias):
     
     """
     Vista para ejecutar el flujo completo de MaxEnt en un proyecto dado.
@@ -95,7 +98,7 @@ def demo_maxent(request, project_name):
 
     try:
         # Crear la instancia del flujo
-        workflow = MaxEntWorkflow(project_name=project_name)
+        workflow = MaxEntWorkflow(project_name=project_invias)
 
         # Forzar el contexto de conversión de rpy2 (clave para evitar el error de contextvars)
         with conversion.localconverter(rpy2_converter):
@@ -103,8 +106,8 @@ def demo_maxent(request, project_name):
 
         return JsonResponse({
             "status": "ok",
-            "message": f"Proyecto {project_name} procesado correctamente.",
-            "result_path": os.path.join(settings.MEDIA_URL, "maxent_projects", project_name, workflow.result_folder)
+            "message": f"Proyecto {project_invias} procesado correctamente.",
+            "result_path": os.path.join(settings.MEDIA_URL, "maxent_projects", project_invias, workflow.result_folder)
         })
 
     except Exception as e:
@@ -224,14 +227,23 @@ def demo_gee(request):
 import requests
 from django.http import JsonResponse
 
-def demo_arcgis(request):
-    url = "https://storage.googleapis.com/invias/maps_invias/mapa.geojson"
-    response = requests.get(url)
-    if response.status_code == 200:
-        data = response.json()
-        # return JsonResponse(response.json(), safe=False)
-        return render(request, 'gee/arcgis.html', {'data': data})
-    return JsonResponse({"error": "No se pudo obtener el archivo"}, status=500)
+def demo_arcgis(request, project_name):
+    # url = "https://storage.googleapis.com/invias/maps_invias/geojson/mapa1.geojson"
+    media_folder  = os.path.join(settings.MEDIA_ROOT, 'maxent_projects', project_name, 'RasterResult', 'salida.geojson')
+
+    # response = requests.get(url)
+    try:
+        with open(media_folder, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            # if response.status_code == 200:
+                # data = response.json()
+                # return JsonResponse(response.json(), safe=False)
+            # print(data)
+            # return render(request, 'gee/arcgis.html', {'data': data})
+            return render(request, 'gee/arcgis.html', {'data': data})
+        
+    except Exception as e:
+        return JsonResponse({"error": "No se pudo obtener el archivo str(e)"}, status=500)
 
 
 def danger(request):
@@ -327,20 +339,20 @@ def layer(request):
 # read_all_files_in_directory("invias", "maps_invias/geojson/")
 
 
+# Surfer Bucket
 def list_blobs(bucket_name):
     """Lists all the blobs in the bucket."""
-    # bucket_name = "your-bucket-name"
     storage_client = storage.Client()
     blobs = storage_client.list_blobs(bucket_name)
 
     for blob in blobs:
         print(blob.name)
 
-
-intervalo_en_segundos = 15 
+bucket_name = "invias"
+intervalo_en_segundos = 10 
 while True:
     print('actualización de datos')
-    list_blobs('invias_mapa_vulnerabilidad_faunistica')
+    list_blobs(bucket_name)
     time.sleep(intervalo_en_segundos)
     break
 
@@ -419,4 +431,41 @@ def download_bucket_with_transfer_manager(
 
 
 print('si esta corriendo') 
-download_bucket_with_transfer_manager("invias")
+# download_bucket_with_transfer_manager("invias")
+download_bucket_with_transfer_manager("invias_mapa_vulnerabilidad_faunistica")
+
+
+
+# Tranformar de tiff a geojson
+
+def tiff_geo(request, project_name):
+    media_folder  = os.path.join(settings.MEDIA_ROOT, 'maxent_projects', project_name, 'RasterResult', 'resultado_maxent.tif')
+
+    try:
+        with rasterio.open(media_folder) as src:
+            image = src.read(1)
+            mask = image != 0
+
+            results = (
+                {'properties': {'value': v}, 'geometry': s}
+                for s, v in shapes(image, mask=mask, transform=src.transform)
+            )
+
+            geoms = list(results)
+            gdf = gpd.GeoDataFrame.from_features(geoms)
+
+            output_file = os.path.join(settings.MEDIA_ROOT, 'maxent_projects', project_name, 'RasterResult', 'salida.geojson')
+
+            gdf.to_file(output_file, driver="GeoJSON")
+
+        return FileResponse(
+            print('si funciona la descarga'),
+            open(output_file, 'rb'),
+            as_attachment=True,
+            filename="salida.geojson",
+            content_type="application/json"
+        )
+    
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+    

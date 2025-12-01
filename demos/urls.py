@@ -15,9 +15,11 @@ urlpatterns = [
     path('rcran/dismo', views.demo_dismo),
     #===== Google Earth Engine =====#
     path('gee/map/', views.demo_gee),
-    path('gee/arcgis', views.demo_arcgis),
+    path('arc-gis/<str:project_name>/', views.demo_arcgis, name='demo_arcgis'),
     path('real/danger', views.danger),
     #===============================#
     path('real/tiff', views.layer),
+
+    path('tiff-geo/<str:project_name>/', views.tiff_geo, name='tiff_geo'),
     
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

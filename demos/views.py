@@ -1,16 +1,13 @@
-import time, os
+import time, os, json, rasterio, traceback, ee, geemap
 from django.shortcuts import render
 from django.http import JsonResponse, FileResponse
 from django.http import HttpResponse
 from django.conf import settings
 from google.cloud import storage
 from google.cloud.storage import transfer_manager
-import rasterio
 from rasterio.features import shapes
-import json
-
-
-
+from django.views.decorators.csrf import csrf_exempt
+from .utils.maxent02 import MaxEntWorkflow  # importa tu clase
 
 #====================#
 ### Demo libraries ###
@@ -20,11 +17,105 @@ import pandas as pd
 import geopandas as gpd
 import rasterio as rs
 from tqdm import tqdm
+from collections import defaultdict
+
 
 ## Sample external data
 from geodatasets import get_path
 import rasterio.features
 import rasterio.warp
+
+
+# ==================================================================== #
+
+# Surfer Bucket
+def list_blobs(bucket_name):
+    """Lists all the blobs in the bucket."""
+    storage_client = storage.Client()
+    blobs = storage_client.list_blobs(bucket_name)
+
+    folders = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+
+    for blob in blobs:
+        parts = blob.name.split("/")
+        if len(parts) >= 3:
+            folder_top = parts[0]
+            folder_out = parts[1]
+            folder_in = parts[2]
+            files = "/".join(parts[3:]) if len(parts) > 3 else parts[2]
+        elif len(parts) == 2:
+            folder_top = parts[0]
+            folder_out = parts[1]
+            folder_in = "(sin interior)"
+            files = parts[1]
+        else:
+            folder_top = "(sin carpeta)"
+            folder_out = "(sin exterior)"
+            folder_in = "(sin interior)"
+            files = blob.name
+        
+        folders[folder_top][folder_out][folder_in].append((files, blob))
+
+    for folder_top in sorted(folders.keys()):
+        print(f"\nCARPETA RAIZ: {folder_top}")
+
+        for folder_out in sorted(folders[folder_top].keys()):
+            print(f"\nCARPETA PADRE: {folder_out}")
+
+            for folder_in in sorted(folders[folder_top][folder_out].keys()):
+                print(f"\nCARPETA HIJO: {folder_in}")
+
+                files = sorted(folders[folder_top][folder_out][folder_in],
+                                  key=lambda x: x[1].updated, reverse=True)
+
+                for files, blob in files:
+                    print(f"{files} || Date: {blob.updated}")
+
+
+bucket_name = "invias_mapa_vulnerabilidad_faunistica"
+intervalo_en_segundos = 10
+while True:
+    print('actualización de datos')
+    list_blobs(bucket_name)
+    time.sleep(intervalo_en_segundos)
+    break
+
+########################################################################
+
+def download_bucket_with_transfer_manager(
+    bucket_name, workers=8, max_results=None, prefix=None):
+
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(bucket_name)
+
+    blobs = bucket.list_blobs(max_results=max_results, prefix=prefix)
+    blob_names = [blob.name for blob in blobs]
+
+    destination_directory = settings.MEDIA_ROOT
+
+    results = transfer_manager.download_many_to_path(
+        bucket,
+        blob_names,
+        destination_directory=destination_directory,
+        max_workers=workers,
+    )
+
+    for name, result in zip(blob_names, results):
+        if isinstance(result, Exception):
+            print(f"❌ Error al descargar {name}: {result}")
+        else:
+            ruta_final = os.path.join(destination_directory, name)
+            print(f"✅ Descargado {name} -> {ruta_final}")
+
+    print("🎉 Todos los archivos descargados con éxito")
+
+
+print('si esta corriendo') 
+# download_bucket_with_transfer_manager("invias")
+# download_bucket_with_transfer_manager("invias_mapa_vulnerabilidad_faunistica")
+
+# ==================================================================== #
+# #################################################################### #
 
 # Create your views here.
 def demo_numpy(request):
@@ -61,6 +152,8 @@ def demo_rasterio(request):
             dataset.crs, 'EPSG:4326', geom, precision=6)
             return render(request, 'demo_rasterio.html', {'geom': geom})
 
+
+######################################################################################################
 def demo_tqdm(request):
     # ps = []
     for i in tqdm(range(10), desc='Processing in view'):
@@ -68,15 +161,6 @@ def demo_tqdm(request):
         time.sleep(0.5)
     return HttpResponse(count)
 
-
-#########################
-import traceback
-from django.http import JsonResponse, HttpResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.shortcuts import render
-from django.conf import settings
-from .utils.maxent02 import MaxEntWorkflow  # importa tu clase
-import os
 #########################
 
 # Import seguro de rpy2 conversion
@@ -153,8 +237,7 @@ def demo_dismo(request):
 
 # https://copilot.microsoft.com/chats/Vjk6tHqi3JtriP2H1xZA3
 #==========================================================#
-import ee
-import geemap
+
 
 # try:
 #     ee.Initialize()
@@ -339,23 +422,6 @@ def layer(request):
 # read_all_files_in_directory("invias", "maps_invias/geojson/")
 
 
-# Surfer Bucket
-def list_blobs(bucket_name):
-    """Lists all the blobs in the bucket."""
-    storage_client = storage.Client()
-    blobs = storage_client.list_blobs(bucket_name)
-
-    for blob in blobs:
-        print(blob.name)
-
-bucket_name = "invias"
-intervalo_en_segundos = 10 
-while True:
-    print('actualización de datos')
-    list_blobs(bucket_name)
-    time.sleep(intervalo_en_segundos)
-    break
-
 
 # def download(descarga_invias):
 #     client = storage.Client()
@@ -402,37 +468,7 @@ while True:
 # print('si esta corriendo')       
 # download_bucket('invias', prefix="maps_invias/geojson/")
 
-def download_bucket_with_transfer_manager(
-    bucket_name, workers=8, max_results=None, prefix=None):
 
-    storage_client = storage.Client()
-    bucket = storage_client.bucket(bucket_name)
-
-    blobs = bucket.list_blobs(max_results=max_results, prefix=prefix)
-    blob_names = [blob.name for blob in blobs]
-
-    destination_directory = settings.MEDIA_ROOT
-
-    results = transfer_manager.download_many_to_path(
-        bucket,
-        blob_names,
-        destination_directory=destination_directory,
-        max_workers=workers,
-    )
-
-    for name, result in zip(blob_names, results):
-        if isinstance(result, Exception):
-            print(f"❌ Error al descargar {name}: {result}")
-        else:
-            ruta_final = os.path.join(destination_directory, name)
-            print(f"✅ Descargado {name} -> {ruta_final}")
-
-    print("🎉 Todos los archivos descargados con éxito")
-
-
-print('si esta corriendo') 
-# download_bucket_with_transfer_manager("invias")
-download_bucket_with_transfer_manager("invias_mapa_vulnerabilidad_faunistica")
 
 
 

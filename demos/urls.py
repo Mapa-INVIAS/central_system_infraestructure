@@ -19,6 +19,11 @@ urlpatterns = [
     path('real/danger', views.danger),
     #===============================#
     path('real/tiff', views.layer),
+    path('exports', views.download_exports, name='download_exports'),
+
+    path("run/", views.run_mosaics_page, name="run_mosaics_page"),
+    path("status/<uuid:task_id>/", views.mosaics_status_page, name="mosaics_status_page"),
+    path("s2/", views.run_s2, name="run_s2"),
 
     path('tiff-geo/<str:project_name>/', views.tiff_geo, name='tiff_geo'),
     

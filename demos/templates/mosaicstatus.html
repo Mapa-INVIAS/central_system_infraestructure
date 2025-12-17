@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Estado del proceso</title>
+</head>
+<body>
+    <h1>Estado del procesamiento</h1>
+
+    <p><strong>Task ID:</strong> {{ task_id }}</p>
+    <p><strong>Estado:</strong> {{ state }}</p>
+
+    {% if state == "SUCCESS" %}
+        <p>✔ Proceso finalizado</p>
+        <pre>{{ result }}</pre>
+    {% elif state == "FAILURE" %}
+        <p>❌ Error</p>
+        <pre>{{ result }}</pre>
+    {% else %}
+        <p>⏳ Procesando...</p>
+        <meta http-equiv="refresh" content="5">
+    {% endif %}
+</body>
+</html>

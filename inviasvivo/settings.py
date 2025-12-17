@@ -15,6 +15,10 @@ from pathlib import Path
 from google.oauth2 import service_account
 from google.cloud import storage
 
+from celery.schedules import crontab
+
+
+
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -72,6 +76,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django_extensions',
     'rest_framework',
+    # 'django_crontab',
+    'django_celery_beat',
     'corsheaders',
     'storages',
     'frontend',
@@ -167,7 +173,8 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+# MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_ROOT = BASE_DIR / "media"
 
 # STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
@@ -187,83 +194,67 @@ GS_CREDENTIALS = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS') # Accesos a la
 # GS_BUCKET_NAME = 'invias' # Nombre del bucket objetivo
 # GS_PROJECT_ID = 'complete-energy-448804-i2' # Identificador del bucket objetivo
 
+GS_CREDENTIALS_FILE = "C:\Program Files\Ampps\www\inviasvivo\inviasvivo\credentials\credentials.json"
+
+# GCS_CREDENTIALS_FILE = BASE_DIR / ruta_credenciales
+
+print('credeciales aca')
+print(GS_CREDENTIALS_FILE)
 
 GS_BUCKET_NAME = 'invias_mapa_vulnerabilidad_faunistica' # Nombre del bucket objetivo
 GS_PROJECT_ID = 'geoinformatica-442522' # Identificador del bucket objetivo
+
+EXPORTS_DIR = MEDIA_ROOT / "exportsGCS"
 
 # Credentials
 # Enlace de archivos
 # MEDIA_URL = f'https://storage.googleapis.com/{GS_BUCKET_NAME}/'
 
-
-######################################################################
-######################################################################
-
-# # Ruta al archivo JSON
-# ruta_credenciales = "C:\Program Files\Ampps\www\inviasvivo\inviasvivo\credentials\credentials.json"
-
-# print(ruta_credenciales)
-
-# Crear credenciales
-# credentials = service_account.Credentials.from_service_account_file(ruta_credenciales)
-
-
-# credentials = service_account.Credentials.from_service_account_file(
-#     "credentials/credentials.json"
-# )
-
-# client = storage.Client(credentials=credentials)
-# bucket = client.bucket("invias")
-
-# print('directorio'+os.getcwd()+'\credentials')
-# print(os.path.exists(os.getcwd()+'/credentials/credentials.json'))
-
-# from google.cloud import storage
-
-# def read_gcs_file_line_by_line(bucket_name, file_name):
-#     client = storage.Client()
-
-#     bucket = client.bucket(bucket_name)
-#     blob = bucket.blob(file_name)
-#     content = blob.download_as_text()
-
-#     for line in content.splitlines():
-#         print(line)
-
-# read_gcs_file_line_by_line("invias", "maps_invias/mapa.geojson")
+# CRONJOBS = []
+#     ('*/5 * * * *', 'demos.cron.my_scheduled_job'),  # cada 5 minutos
+# ]
 
 
 
-#####################################################################
-#####################################################################
-#===================================================================# 
-# def read_all_files_in_directory(bucket_name, prefix):
-#     client = storage.Client()
-#     bucket = client.bucket(bucket_name)
+###############################################################################
+# =====================
+# GEE / EXPORT SETTINGS
+# =====================
 
-#     blobs = bucket.list_blobs(prefix=prefix)
+GEE_MASK_SHP = BASE_DIR / "data/mask200_Dissolve.shp"
+GEE_OUTPUT_DIR = BASE_DIR / "data/ARQ_TESELAS"
 
-#     for blob in blobs:
-#         print(f"\n=== Leyendo archivo: {blob.name} ===")
+GEE_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-#         content = blob.download_as_text()
-#         for line in content.splitlines():
-#             print(line)
+PREFERRED_SPLIT_FIELDS = [
+    "DPTO", "DEPARTAMEN", "NOMBRE_DPT", "NOM_DEPTO", "DEPARTAMENTO"
+]
 
-# read_all_files_in_directory("invias", "maps_invias/geojson/")
+REGION_SIZE_KM = 300
+TILE_SIZE_KM = 50
+OVERLAP_KM = 0
 
+MAX_CONCURRENT = 3
+PAUSE_BETWEEN = 0.2
 
-##########################################################################
-#========================================================================#
-# def list_blobs(bucket_name):
-#     """Lists all the blobs in the bucket."""
-#     # bucket_name = "your-bucket-name"
-#     storage_client = storage.Client()
-#     blobs = storage_client.list_blobs(bucket_name)
+MAX_SPLIT_DEPTH = 3
+MIN_TILE_KM = 3
 
-    
-#     for blob in blobs:
-#         print(blob.name)
+WRITE_TILES_SHP_PER_ZONE = True
+WRITE_TILES_SHP_GLOBAL = True
 
+# =====================
+# GEE AUTH
+# =====================
 
-# list_blobs('invias')
+GEE_SA_EMAIL = "geoinformatica-442522@geoinformatica-442522.iam.gserviceaccount.com"
+GEE_SA_KEY = BASE_DIR / "credentials/geoinformatica.json"
+GEE_PROJECT_ID = "geoinformatica-442522"
+
+GCS_BUCKET = "invias_mapa_vulnerabilidad_faunistica"
+GCS_PREFIX = "s2/2025Q4"
+
+CRS_EXPORT = "EPSG:4326"
+SCALE_EXPORT_M = 100
+EXPORT_COG = True
+

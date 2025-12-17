@@ -17,7 +17,7 @@ from rpy2.robjects.vectors import StrVector
 
 class MaxEntWorkflow:
     def __init__(self,
-                 project_name,
+                 maxent_results,
                  raster_folder="rasterIN",
                  crop_folder="Crop",
                  output_folder="output",
@@ -32,13 +32,16 @@ class MaxEntWorkflow:
                  replicates=3):
 
         self.basepath = os.path.join(settings.MEDIA_ROOT, "maxent_invias")
-        self.project_name = project_name
-        self.project_path = os.path.join(self.basepath, project_name)
+        self.maxent_results = maxent_results
+        self.project_path = os.path.join(self.basepath, maxent_results)
 
         self.raster_folder = raster_folder
         self.crop_folder = crop_folder
         self.output_folder = output_folder
         self.result_folder = result_folder
+        # Ingresar folder nombre region revisar estructura
+        
+        # 
         self.hotspot_filename = hotspot_filename
         self.output_sample_name = output_sample_name
         self.line_shp_name = line_shp_name

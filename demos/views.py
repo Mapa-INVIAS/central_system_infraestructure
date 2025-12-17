@@ -1,5 +1,5 @@
-import time, os, json, rasterio, traceback, ee, geemap
-from django.shortcuts import render
+import time, os, schedule, json, rasterio, traceback, ee, geemap
+from django.shortcuts import render, redirect
 from django.http import JsonResponse, FileResponse
 from django.http import HttpResponse
 from django.conf import settings
@@ -8,10 +8,14 @@ from google.cloud.storage import transfer_manager
 from rasterio.features import shapes
 from django.views.decorators.csrf import csrf_exempt
 from .utils.maxent02 import MaxEntWorkflow  # importa tu clase
+from .utils.downloadInputsMaxent import download_latest_exports
 
-#====================#
-### Demo libraries ###
-#====================#
+#================================================#
+#                                                #
+##            CENTRAL PROCESS SYSTEM            ##
+#                                                #
+#================================================#
+
 import numpy as np
 import pandas as pd
 import geopandas as gpd
@@ -19,69 +23,151 @@ import rasterio as rs
 from tqdm import tqdm
 from collections import defaultdict
 
+## ========  Sample external data ======== ##
 
-## Sample external data
 from geodatasets import get_path
 import rasterio.features
 import rasterio.warp
 
 
-# ==================================================================== #
+# ========================================= #
+# Current conditions within the target bucket
+# Tree Bucket
 
-# Surfer Bucket
+# This function scans the bucket and detects updates
+
+def build_tree(blobs):
+    tree = {}
+    for blob in blobs:
+        parts = blob.name.split("/")
+        node = tree
+        for part in parts[:-1]: 
+            node = node.setdefault(part, {})
+        node.setdefault("_files", []).append((parts[-1], blob))
+    return tree
+
+# 
+def print_tree(node, indent=0):
+    for key, value in sorted(node.items()):
+        if key == "_files":
+            for file, blob in sorted(value, key=lambda x: x[1].updated, reverse=True):
+                print(" " * indent + f"||--** {file} || Date: {blob.updated}")
+        else:
+            print(" " * indent + f"|-* {key}")
+            print_tree(value, indent + 4)
+
+
+# Función de scanner
 def list_blobs(bucket_name):
-    """Lists all the blobs in the bucket."""
+    # global contador
+    # contador += 1
+
+    """Lista blobs agrupados en árbol dinámico."""
     storage_client = storage.Client()
     blobs = storage_client.list_blobs(bucket_name)
 
-    folders = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
-
-    for blob in blobs:
-        parts = blob.name.split("/")
-        if len(parts) >= 3:
-            folder_top = parts[0]
-            folder_out = parts[1]
-            folder_in = parts[2]
-            files = "/".join(parts[3:]) if len(parts) > 3 else parts[2]
-        elif len(parts) == 2:
-            folder_top = parts[0]
-            folder_out = parts[1]
-            folder_in = "(sin interior)"
-            files = parts[1]
-        else:
-            folder_top = "(sin carpeta)"
-            folder_out = "(sin exterior)"
-            folder_in = "(sin interior)"
-            files = blob.name
-        
-        folders[folder_top][folder_out][folder_in].append((files, blob))
-
-    for folder_top in sorted(folders.keys()):
-        print(f"\nCARPETA RAIZ: {folder_top}")
-
-        for folder_out in sorted(folders[folder_top].keys()):
-            print(f"\nCARPETA PADRE: {folder_out}")
-
-            for folder_in in sorted(folders[folder_top][folder_out].keys()):
-                print(f"\nCARPETA HIJO: {folder_in}")
-
-                files = sorted(folders[folder_top][folder_out][folder_in],
-                                  key=lambda x: x[1].updated, reverse=True)
-
-                for files, blob in files:
-                    print(f"{files} || Date: {blob.updated}")
-
+    tree = build_tree(blobs)
+    print_tree(tree)
+    # print(f'Ejecución número  {contador}')
 
 bucket_name = "invias_mapa_vulnerabilidad_faunistica"
-intervalo_en_segundos = 10
-while True:
-    print('actualización de datos')
-    list_blobs(bucket_name)
-    time.sleep(intervalo_en_segundos)
-    break
+
+# schedule.every(1).minutes.do(list_blobs, bucket_name)
+# contador = 0
+
+# print('Activando programador de tareas')
+# while True:
+#     schedule.run_pending()
+#     time.sleep(1)
+
+list_blobs(bucket_name)
 
 ########################################################################
+########################################################################
+# Descarga GCS ultimo
 
+def download_exports(request):
+    try:
+        result = download_latest_exports()
+        return JsonResponse({"status": "ok", "result": result})
+    except Exception as e:
+        return JsonResponse({"status": "error", "message": str(e)}, status=500)
+
+########################################################################
+########################################################################
+# Crea los mosaicos
+
+
+from django.contrib.admin.views.decorators import staff_member_required
+from .tasks import run_mosaics_task
+from celery.result import AsyncResult
+
+
+@staff_member_required
+def run_mosaics_page(request):
+    """
+    Página web para lanzar el procesamiento
+    """
+    if request.method == "POST":
+        task = run_mosaics_task.delay()
+        return redirect("mosaics_status_page", task_id=task.id)
+
+    return render(request, "mosaic.html")
+
+
+
+@staff_member_required
+def mosaics_status_page(request, task_id):
+    result = AsyncResult(task_id)
+
+    return render(request, "mosaicstatus.html", {
+        "task_id": task_id,
+        "state": result.state,
+        "result": result.result
+    })
+
+
+########################################################################
+########################################################################
+
+import threading
+import traceback
+
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+
+from .utils.exportTiles import run_s2_export
+
+
+@csrf_exempt
+@require_POST
+def run_s2(request):
+    """
+    Endpoint para lanzar el proceso S2 sin bloquear Django
+    """
+
+    def background_job():
+        try:
+            run_s2_export()
+        except Exception:
+            traceback.print_exc()
+
+    thread = threading.Thread(
+        target=background_job,
+        daemon=True
+    )
+    thread.start()
+
+    return JsonResponse({
+        "status": "started",
+        "message": "Proceso Sentinel-2 lanzado en segundo plano"
+    })
+
+
+########################################################################
+########################################################################
+# Complete download of bucket data
 def download_bucket_with_transfer_manager(
     bucket_name, workers=8, max_results=None, prefix=None):
 
@@ -102,10 +188,10 @@ def download_bucket_with_transfer_manager(
 
     for name, result in zip(blob_names, results):
         if isinstance(result, Exception):
-            print(f"❌ Error al descargar {name}: {result}")
+            print(f"x Error al descargar {name}: {result}")
         else:
             ruta_final = os.path.join(destination_directory, name)
-            print(f"✅ Descargado {name} -> {ruta_final}")
+            print(f"✓ Descargado {name} -> {ruta_final}")
 
     print("🎉 Todos los archivos descargados con éxito")
 
@@ -117,7 +203,7 @@ print('si esta corriendo')
 # ==================================================================== #
 # #################################################################### #
 
-# Create your views here.
+# Create your views here #
 def demo_numpy(request):
     data = [1,2,3,4,5]
     mean_data = np.mean(data)
@@ -152,8 +238,8 @@ def demo_rasterio(request):
             dataset.crs, 'EPSG:4326', geom, precision=6)
             return render(request, 'demo_rasterio.html', {'geom': geom})
 
+# ===#################################################################=== #
 
-######################################################################################################
 def demo_tqdm(request):
     # ps = []
     for i in tqdm(range(10), desc='Processing in view'):
@@ -161,9 +247,9 @@ def demo_tqdm(request):
         time.sleep(0.5)
     return HttpResponse(count)
 
-#########################
+# ===#################################################################=== #
+# ========          Import seguro de rpy2 conversion           ========== #
 
-# Import seguro de rpy2 conversion
 from rpy2.robjects import conversion
 try:
     from rpy2.robjects.conversion import _converter as rpy2_converter  # para versiones nuevas
@@ -504,4 +590,14 @@ def tiff_geo(request, project_name):
     
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+    
+
+
+
+# Funciones de consumo de fuentes paralelas
+
+def distances_way(request):
+    data_url = "https://machine.domain.com/webadaptor/rest/services"
+    response = request.get(data_url)
+    return data_url
     

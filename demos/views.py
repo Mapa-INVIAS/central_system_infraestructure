@@ -80,7 +80,7 @@ bucket_name = "invias_mapa_vulnerabilidad_faunistica"
 #     schedule.run_pending()
 #     time.sleep(1)
 
-list_blobs(bucket_name)
+# list_blobs(bucket_name)
 
 ########################################################################
 ########################################################################
@@ -177,7 +177,10 @@ def download_bucket_with_transfer_manager(
     blobs = bucket.list_blobs(max_results=max_results, prefix=prefix)
     blob_names = [blob.name for blob in blobs]
 
-    destination_directory = settings.MEDIA_ROOT
+    # destination_directory = settings.MEDIA_ROOT
+
+    destination_directory = os.path.join(settings.MEDIA_ROOT, 'preprocess')
+    os.makedirs(destination_directory, exist_ok=True)
 
     results = transfer_manager.download_many_to_path(
         bucket,
@@ -199,6 +202,42 @@ def download_bucket_with_transfer_manager(
 print('si esta corriendo') 
 # download_bucket_with_transfer_manager("invias")
 # download_bucket_with_transfer_manager("invias_mapa_vulnerabilidad_faunistica")
+
+
+########################################################################
+########################################################################
+
+# Proceso de descarga de capas paralelas
+
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from threading import Thread
+from .utils.parallelLayers import ejecutar_pipeline
+
+
+@csrf_exempt
+def run_pipeline(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "Metodo errado"}, status=405)
+    
+    base_path = request.POST.get("path")
+    geojson = request.POST.get("geojson")
+
+    if not base_path or not geojson:
+        return JsonResponse({"error": "Faltan parametros"}, status=400)
+    
+    t = Thread(
+        target = ejecutar_pipeline,
+        args = (base_path, geojson),
+        daemon = True
+    )
+
+    t.start()
+
+    return JsonResponse({
+        "status": "ok",
+        "message": "Se ejecuta pipeline"
+    })
 
 # ==================================================================== #
 # #################################################################### #
@@ -256,7 +295,8 @@ try:
 except ImportError:
     from rpy2.robjects import default_converter as rpy2_converter  # versiones antiguas
 
-def demo_maxent(request, project_invias):
+# def demo_maxent(request, project_name="maxent_invias"):
+def demo_maxent(request, project_name):
     
     """
     Vista para ejecutar el flujo completo de MaxEnt en un proyecto dado.
@@ -268,7 +308,7 @@ def demo_maxent(request, project_invias):
 
     try:
         # Crear la instancia del flujo
-        workflow = MaxEntWorkflow(project_name=project_invias)
+        workflow = MaxEntWorkflow(project_name=project_name)
 
         # Forzar el contexto de conversión de rpy2 (clave para evitar el error de contextvars)
         with conversion.localconverter(rpy2_converter):
@@ -276,8 +316,8 @@ def demo_maxent(request, project_invias):
 
         return JsonResponse({
             "status": "ok",
-            "message": f"Proyecto {project_invias} procesado correctamente.",
-            "result_path": os.path.join(settings.MEDIA_URL, "maxent_projects", project_invias, workflow.result_folder)
+            "message": f"Proyecto {project_name} procesado correctamente.",
+            "result_path": os.path.join(settings.MEDIA_URL, "maxent_projects", project_name, workflow.result_folder)
         })
 
     except Exception as e:

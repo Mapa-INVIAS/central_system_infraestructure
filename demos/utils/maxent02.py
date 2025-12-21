@@ -8,33 +8,45 @@ from rasterio import open as rasterio_open
 from rasterio.mask import mask
 from django.conf import settings
 
-# rpy2 imports
-from rpy2 import robjects
 from rpy2.robjects import r, globalenv
 from rpy2.robjects.packages import importr
 from rpy2.robjects.vectors import StrVector
 
 
+# =====================================================
+# CLASE MAXENT
+# =====================================================
 class MaxEntWorkflow:
-    def __init__(self,
-                 project_name,
-                 raster_folder="rasterIN",
-                 crop_folder="Crop",
-                 output_folder="output",
-                 result_folder="RasterResult",
-                 hotspot_filename="atropellamiento.csv",
-                 output_sample_name="muestreo.csv",
-                 line_shp_name="vias.shp",
-                 buffer_dist=90,
-                 simplify_factor=30,
-                 n_points=10000,
-                 training_prob=0.8,
-                 replicates=3):
 
-        self.basepath = os.path.join(settings.MEDIA_ROOT, "maxent_invias")
+    def __init__(
+        self,
+        project_name,
+        input_basepath=None,  
+        output_basepath=None,  
+        raster_folder="rasterIN",
+        crop_folder="Crop",
+        output_folder="output",
+        result_folder="RasterResult",
+        hotspot_filename="atropellamiento.csv",
+        output_sample_name="muestreo.csv",
+        line_shp_name="vias.shp",
+        buffer_dist=100 * np.sqrt(2),
+        simplify_factor=30,
+        n_points=10000,
+        training_prob=0.8,
+        replicates=3,
+    ):
         self.project_name = project_name
-        self.project_path = os.path.join(self.basepath, project_name)
 
+        # Si no se pasan, usamos MEDIA_ROOT
+        self.input_basepath = input_basepath or os.path.join(settings.MEDIA_ROOT, "jacknife")
+        self.output_basepath = output_basepath or os.path.join(settings.MEDIA_ROOT, "maxent_invias")
+
+        self.input_project_path = os.path.join(self.input_basepath, project_name)
+        self.output_project_path = os.path.join(self.output_basepath, project_name)
+        os.makedirs(self.output_project_path, exist_ok=True)
+
+        # Parámetros restantes
         self.raster_folder = raster_folder
         self.crop_folder = crop_folder
         self.output_folder = output_folder
@@ -48,124 +60,119 @@ class MaxEntWorkflow:
         self.training_prob = training_prob
         self.replicates = replicates
 
-        os.makedirs(self.project_path, exist_ok=True)
-
-        self.jacknife_entries = {}
-
-        for i in range(1,6):
-        # while True:
-            region_path = os.path.join(settings.MEDIA_ROOT, "jacknife", f"region{i}")
-            if os.path.exists(region_path):
-                # self.jacknife_entries[f"region{i}"] = os.listdir(region_path)
-                self.jacknife_entries[f"region{i}"] = [
-                    os.path.join(region_path, entry) for entry in os.listdir(region_path)
-                ]
-            else:
-                self.jacknife_entries[f"region{i}"] = []
-
-    # ----------------------
-    # ETAPA 1: preparación
-    # ----------------------
+    # =================================================
     def run(self):
-        tqdm.write(f"Procesando proyecto: {self.project_name}")
+        print(f"\n=== Procesando región: {self.project_name} ===")
 
         self.preparar_carpetas()
         self.recortar_rasteres()
         self.generar_puntos_aleatorios()
         self.ejecutar_maxent_en_r()
 
-        tqdm.write(f"Proyecto {self.project_name} completado")
+        print(f"=== Región {self.project_name} completada ===")
 
+    # =================================================
     def preparar_carpetas(self):
         for carpeta in [self.crop_folder, self.output_folder, self.result_folder]:
-            path_carpeta = os.path.join(self.project_path, carpeta)
-            os.makedirs(path_carpeta, exist_ok=True)
+            os.makedirs(
+                os.path.join(self.output_project_path, carpeta),
+                exist_ok=True
+            )
 
+    # =================================================
     def recortar_rasteres(self):
-        ruta_shp = os.path.join(self.project_path, self.line_shp_name)
-        if not os.path.exists(ruta_shp):
-            return
+        shp_path = os.path.join(self.input_project_path, self.line_shp_name)
+        if not os.path.exists(shp_path):
+            raise FileNotFoundError(shp_path)
 
-        lineas = gpd.read_file(ruta_shp)
-        lineas_m = lineas.to_crs(epsg=3857)
-        buffer_geom = lineas_m.buffer(self.buffer_dist)
-        buffer_union = buffer_geom.union_all()
-        buffer_simpl = buffer_union.simplify(self.simplify_factor, preserve_topology=True)
+        lineas = gpd.read_file(shp_path).to_crs(epsg=3857)
 
-        ruta_buffer = os.path.join(self.project_path, "buffer_vias.shp")
-        gpd.GeoSeries([buffer_simpl], crs='EPSG:3857').to_file(ruta_buffer)
+        buffer_geom = (
+            lineas.buffer(self.buffer_dist)
+            .union_all()
+            .simplify(self.simplify_factor, preserve_topology=True)
+        )
 
-        carpeta_rasteres = os.path.join(self.project_path, self.raster_folder)
-        raster_files = [f for f in os.listdir(carpeta_rasteres) if f.lower().endswith('.tif')]
-        if not raster_files:
-            return
+        raster_dir = os.path.join(self.input_project_path, self.raster_folder)
+        crop_dir = os.path.join(self.output_project_path, self.crop_folder)
 
-        carpeta_crop = os.path.join(self.project_path, self.crop_folder)
-        for tif in tqdm(raster_files, desc=f"Recortando {self.project_name}", leave=False):
-            ruta_tif = os.path.join(carpeta_rasteres, tif)
-            try:
-                with rasterio_open(ruta_tif) as src:
-                    buffer_geom_crs = gpd.GeoSeries([buffer_simpl], crs='EPSG:3857').to_crs(src.crs)
-                    geoms = [buffer_geom_crs.iloc[0].__geo_interface__]
-                    out_image, out_transform = mask(src, geoms, crop=True)
-                    out_meta = src.meta.copy()
-                    out_meta.update({
-                        "height": out_image.shape[1],
-                        "width": out_image.shape[2],
-                        "transform": out_transform
-                    })
-                    ruta_guardar = os.path.join(carpeta_crop, tif)
-                    with rasterio_open(ruta_guardar, "w", **out_meta) as dest:
-                        dest.write(out_image)
-            except Exception as e:
-                print(f"Error recortando {tif}: {e}")
+        for tif in os.listdir(raster_dir):
+            if not tif.lower().endswith(".tif"):
+                continue
 
+            with rasterio_open(os.path.join(raster_dir, tif)) as src:
+                geom = (
+                    gpd.GeoSeries([buffer_geom], crs="EPSG:3857")
+                    .to_crs(src.crs)
+                    .iloc[0]
+                )
+
+                out_img, out_tr = mask(
+                    src,
+                    [geom.__geo_interface__],
+                    crop=True
+                )
+
+                meta = src.meta.copy()
+                meta.update(
+                    height=out_img.shape[1],
+                    width=out_img.shape[2],
+                    transform=out_tr,
+                )
+
+                with rasterio_open(
+                    os.path.join(crop_dir, tif),
+                    "w",
+                    **meta
+                ) as dst:
+                    dst.write(out_img)
+
+    # =================================================
     def generar_puntos_aleatorios(self):
-        carpeta_crop = os.path.join(self.project_path, self.crop_folder)
-        raster_files = [f for f in os.listdir(carpeta_crop) if f.lower().endswith('.tif')]
+        crop_dir = os.path.join(self.output_project_path, self.crop_folder)
+        raster_files = [f for f in os.listdir(crop_dir) if f.endswith(".tif")]
+
         if not raster_files:
-            return
+            raise RuntimeError("No hay rásteres recortados")
 
-        ruta_raster = os.path.join(carpeta_crop, raster_files[0])
-        try:
-            with rasterio_open(ruta_raster) as src:
-                mask_arr = src.read(1)
-                mask_valid = np.where(mask_arr != src.nodata)
-                if len(mask_valid[0]) == 0:
-                    return
-                indices = list(zip(mask_valid[0], mask_valid[1]))
-                n_puntos = min(self.n_points, len(indices))
-                sampled_indices = random.sample(indices, n_puntos)
-                coords = [src.xy(row, col) for row, col in sampled_indices]
-                df = pd.DataFrame(coords, columns=['x', 'y'])
-                ruta_csv = os.path.join(self.project_path, self.output_sample_name)
-                df.to_csv(ruta_csv, index=False)
-        except Exception as e:
-            print(f"Error generando puntos aleatorios: {e}")
+        with rasterio_open(os.path.join(crop_dir, raster_files[0])) as src:
+            arr = src.read(1)
+            valid = np.where(arr != src.nodata)
 
-    # ----------------------
-    # ETAPA 2: ejecución R
-    # ----------------------
+            n = min(self.n_points, len(valid[0]))
+            idx = random.sample(list(zip(valid[0], valid[1])), n)
+            xy = [src.xy(r, c) for r, c in idx]
+
+        df = pd.DataFrame(xy, columns=["x", "y"])
+        df.to_csv(
+            os.path.join(self.output_project_path, self.output_sample_name),
+            index=False,
+        )
+
+    # =================================================
     def ejecutar_maxent_en_r(self):
-        """Ejecuta el script R directamente desde Python con rpy2."""
+        from rpy2.robjects import globalenv
+        from rpy2.robjects.packages import importr
+        from rpy2.robjects.vectors import StrVector
+        import os
 
-        # Instalar paquetes necesarios si faltan
+        # Preparar CRAN y paquetes
         utils = importr("utils")
         utils.chooseCRANmirror(ind=1)
         paquetes = ["raster", "dismo", "readr", "sp", "sf", "codetools", "rJava"]
         utils.install_packages(StrVector(paquetes))
 
-        # Asignar variables de entorno
-        globalenv["basepath"] = self.project_path.replace("\\", "/")
+        # Variables de entorno
+        globalenv["basepath"] = self.output_project_path.replace("\\", "/")
         globalenv["cropFolder"] = self.crop_folder
         globalenv["outputFolder"] = self.output_folder
         globalenv["resultFolder"] = self.result_folder
-        globalenv["hotspot"] = self.hotspot_filename
+        globalenv["hotspot"] = os.path.join(self.input_project_path, self.hotspot_filename).replace("\\", "/")
         globalenv["outputSample"] = self.output_sample_name
         globalenv["trainingProb"] = self.training_prob
         globalenv["replicates"] = self.replicates
 
-        # Código R embebido
+        # Código R
         script_r = """
         library(raster)
         library(dismo)
@@ -178,50 +185,87 @@ class MaxEntWorkflow:
 
         .jcall("java/lang/System", "S", "getProperty", "java.version")
 
-
         setwd(basepath)
-        crop_path <- file.path(basepath, cropFolder)
+        crop_path   <- file.path(basepath, cropFolder)
         output_path <- file.path(basepath, outputFolder)
         result_path <- file.path(basepath, resultFolder)
 
-        raster_files <- list.files(path = crop_path, pattern = "\\\\.tif$", full.names = TRUE)
-        if (length(raster_files) == 0) stop("No se encontraron rásteres recortados.")
+        raster_files <- list.files(crop_path, pattern="\\\\.tif$", full.names=TRUE)
+        if (length(raster_files) == 0) stop("No hay rásteres recortados")
 
         clim <- stack(raster_files)
+
+        # Background
         bg <- read_csv(file.path(basepath, outputSample))
         coordinates(bg) <- ~x + y
 
-        occ_raw <- read_csv(file.path(basepath, hotspot))
-        occ_clean <- subset(occ_raw, !is.na(Latitude) & !is.na(Longitude))
-        occ_clean <- occ_clean[!duplicated(occ_clean[c("Latitude","Longitude")]), ]
+        # Ocurrencias
+        occ_raw <- read_csv(hotspot)
+        occ_clean <- occ_raw[!is.na(occ_raw$Longitude) & !is.na(occ_raw$Latitude), ]
+        occ_clean <- occ_clean[!duplicated(occ_clean[c("Longitude","Latitude")]), ]
         coordinates(occ_clean) <- ~Longitude + Latitude
 
-        numReg <- nrow(occ_clean)
-        if (numReg < 5) stop("No hay suficientes puntos de ocurrencia.")
+        n <- nrow(occ_clean)
+        if (n < 5) stop("Muy pocos puntos de ocurrencia")
 
-        numTrain <- round(numReg * trainingProb)
-        selected <- sample(1:numReg, numTrain)
-        occ_train <- occ_clean[selected, ]
-        occ_test <- occ_clean[-selected, ]
+        # Selección entrenamiento
+        sel <- sample(1:n, round(n * trainingProb))
+        occ_train <- occ_clean[sel, ]
+        occ_test  <- occ_clean[-sel, ]
 
+        # Extraer valores de raster para presencia y background
         p <- extract(clim, occ_train)
         a <- extract(clim, bg)
         pa <- c(rep(1, nrow(p)), rep(0, nrow(a)))
         pder <- as.data.frame(rbind(p, a))
 
-        mod <- maxent(x = pder, p = pa,
-                      path = output_path,
-                      args = c("autofeature", "responsecurves", "jackknife",
-                               paste0("replicates=", replicates)))
+        # Modelo MaxEnt
+        mod <- maxent(
+            x = pder,
+            p = pa,
+            path = output_path,
+            args = c("autofeature", "responsecurves", "jackknife",
+                    paste0("replicates=", replicates))
+        )
 
+        # Predicción
         pred <- predict(mod, clim)
         writeRaster(pred, filename=file.path(result_path, "resultado_maxent.tif"), overwrite=TRUE)
         """
 
         try:
             r(script_r)
-            print("Ejecución MaxEnt completada en R.")
+            print(f"[OK] MaxEnt ejecutado para {self.project_name}")
         except Exception as e:
-            print(f"Error en ejecución R: {e}")
+            print(f"[ERROR] Error en ejecución R ({self.project_name}): {e}")
 
 
+# =====================================================
+# ORQUESTADOR
+# =====================================================
+def run_maxent_desde_jacknife():
+    jacknife_root = os.path.join(settings.MEDIA_ROOT, "jacknife")
+    output_root = os.path.join(settings.MEDIA_ROOT, "maxent_invias")
+
+    regiones = [
+        d for d in os.listdir(jacknife_root)
+        if os.path.isdir(os.path.join(jacknife_root, d))
+    ]
+
+    if not regiones:
+        raise RuntimeError("No hay regiones en jacknife")
+
+    for region in regiones:
+        wf = MaxEntWorkflow(
+            project_name=region,
+            input_basepath=jacknife_root,
+            output_basepath=output_root,
+        )
+        wf.run()
+
+
+# =====================================================
+# EJECUCIÓN DIRECTA (opcional)
+# =====================================================
+# if __name__ == "__main__":
+#     run_maxent_desde_jacknife()

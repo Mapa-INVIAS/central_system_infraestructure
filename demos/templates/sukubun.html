@@ -1,0 +1,29 @@
+{% extends 'index.html' %}
+
+{% block content %}
+
+<section>
+   <form action="" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+         <h1>Ingrese el documento de SUKUBUN actualizado</h1>
+         <input type="file" name="file" id="">
+         <input type="text" name="note" id="">
+         <input type="submit" value="Almacenar archivo">
+   </form>
+</section>
+
+<section>
+   <article>
+      <table>
+         <thead>
+            <tr>
+               <td>Name</td>
+               <td>Note</td>
+               <td>Create</td>
+            </tr>
+         </thead>
+      </table>
+   </article>
+</section>
+
+{% endblock %}

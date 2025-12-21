@@ -194,7 +194,11 @@ GS_CREDENTIALS = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS') # Accesos a la
 # GS_BUCKET_NAME = 'invias' # Nombre del bucket objetivo
 # GS_PROJECT_ID = 'complete-energy-448804-i2' # Identificador del bucket objetivo
 
-GS_CREDENTIALS_FILE = "C:\Program Files\Ampps\www\inviasvivo\inviasvivo\credentials\credentials.json"
+GS_CREDENTIALS_FILE = "C:\Program Files\Ampps\www\inviasvivo\inviasvivo\credentials\geoinformatica.json"
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(GS_CREDENTIALS_FILE)
+
+GS_PROJECT_ID = 'geoinformatica-442522' # Identificador del bucket objetivo
+GS_EMAIL = "geoinformatica-442522@geoinformatica-442522.iam.gserviceaccount.com"
 
 # GCS_CREDENTIALS_FILE = BASE_DIR / ruta_credenciales
 
@@ -202,7 +206,7 @@ print('credeciales aca')
 print(GS_CREDENTIALS_FILE)
 
 GS_BUCKET_NAME = 'invias_mapa_vulnerabilidad_faunistica' # Nombre del bucket objetivo
-GS_PROJECT_ID = 'geoinformatica-442522' # Identificador del bucket objetivo
+
 
 EXPORTS_DIR = MEDIA_ROOT / "exportsGCS"
 
@@ -211,50 +215,9 @@ EXPORTS_DIR = MEDIA_ROOT / "exportsGCS"
 # MEDIA_URL = f'https://storage.googleapis.com/{GS_BUCKET_NAME}/'
 
 # CRONJOBS = []
-#     ('*/5 * * * *', 'demos.cron.my_scheduled_job'),  # cada 5 minutos
+    # ('*/5 * * * *', 'demos.cron.my_scheduled_job'),  # cada 5 minutos
 # ]
 
 
-
 ###############################################################################
-# =====================
-# GEE / EXPORT SETTINGS
-# =====================
-
-GEE_MASK_SHP = BASE_DIR / "data/mask200_Dissolve.shp"
-GEE_OUTPUT_DIR = BASE_DIR / "data/ARQ_TESELAS"
-
-GEE_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-
-PREFERRED_SPLIT_FIELDS = [
-    "DPTO", "DEPARTAMEN", "NOMBRE_DPT", "NOM_DEPTO", "DEPARTAMENTO"
-]
-
-REGION_SIZE_KM = 300
-TILE_SIZE_KM = 50
-OVERLAP_KM = 0
-
-MAX_CONCURRENT = 3
-PAUSE_BETWEEN = 0.2
-
-MAX_SPLIT_DEPTH = 3
-MIN_TILE_KM = 3
-
-WRITE_TILES_SHP_PER_ZONE = True
-WRITE_TILES_SHP_GLOBAL = True
-
-# =====================
-# GEE AUTH
-# =====================
-
-GEE_SA_EMAIL = "geoinformatica-442522@geoinformatica-442522.iam.gserviceaccount.com"
-GEE_SA_KEY = BASE_DIR / "credentials/geoinformatica.json"
-GEE_PROJECT_ID = "geoinformatica-442522"
-
-GCS_BUCKET = "invias_mapa_vulnerabilidad_faunistica"
-GCS_PREFIX = "s2/2025Q4"
-
-CRS_EXPORT = "EPSG:4326"
-SCALE_EXPORT_M = 100
-EXPORT_COG = True
 

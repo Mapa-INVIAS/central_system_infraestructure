@@ -1,6 +1,6 @@
-import time, os, schedule, json, rasterio, traceback, ee, geemap
+import time, os, schedule, json, rasterio, traceback, ee, geemap, requests
 from django.shortcuts import render, redirect
-from django.http import JsonResponse, FileResponse
+from django.http import JsonResponse, FileResponse, HttpResponseNotAllowed
 from django.http import HttpResponse
 from django.conf import settings
 from google.cloud import storage
@@ -9,6 +9,9 @@ from rasterio.features import shapes
 from django.views.decorators.csrf import csrf_exempt
 from .utils.maxent02 import MaxEntWorkflow  # importa tu clase
 from .utils.downloadInputsMaxent import download_latest_exports
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
+
+from .forms import sukubunForm
 
 #================================================#
 #                                                #
@@ -84,6 +87,42 @@ bucket_name = "invias_mapa_vulnerabilidad_faunistica"
 
 ########################################################################
 ########################################################################
+
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+
+from .utils.ee_init import init_ee
+from .utils.exportTiles import run_s2_export
+
+
+@csrf_exempt
+@require_POST
+def run_s2(request):
+    try:
+        init_ee()   
+
+        body = json.loads(request.body.decode()) if request.body else {}
+
+        result = run_s2_export(
+            limit_zones=body.get("limit_zones"),
+            dry_run_tiles=body.get("dry_run_tiles")
+        )
+
+        return JsonResponse(result, status=200)
+
+    except Exception as e:
+        return JsonResponse(
+            {
+                "status": "error",
+                "detail": str(e),
+                "hint": "Verifique permisos del Service Account en IAM"
+            },
+            status=500
+        )
+
+
+########################################################################
+########################################################################
 # Descarga GCS ultimo
 
 def download_exports(request):
@@ -130,43 +169,6 @@ def mosaics_status_page(request, task_id):
 ########################################################################
 ########################################################################
 
-import threading
-import traceback
-
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
-
-from .utils.exportTiles import run_s2_export
-
-
-@csrf_exempt
-@require_POST
-def run_s2(request):
-    """
-    Endpoint para lanzar el proceso S2 sin bloquear Django
-    """
-
-    def background_job():
-        try:
-            run_s2_export()
-        except Exception:
-            traceback.print_exc()
-
-    thread = threading.Thread(
-        target=background_job,
-        daemon=True
-    )
-    thread.start()
-
-    return JsonResponse({
-        "status": "started",
-        "message": "Proceso Sentinel-2 lanzado en segundo plano"
-    })
-
-
-########################################################################
-########################################################################
 # Complete download of bucket data
 def download_bucket_with_transfer_manager(
     bucket_name, workers=8, max_results=None, prefix=None):
@@ -242,52 +244,52 @@ def run_pipeline(request):
 # ==================================================================== #
 # #################################################################### #
 
-# Create your views here #
-def demo_numpy(request):
-    data = [1,2,3,4,5]
-    mean_data = np.mean(data)
-    std_data = np.std(data)
-    return render(request, 'demo_numpy.html', 
-                    {
-                      'data': data, 
-                      'mean_data': mean_data, 
-                      'std_data': std_data
-                    })
 
-def demo_pandas(request):
-    data = {
-        'name': ['Jasmin', 'Nelson', 'Luis', 'Andres', 'Jairo'],
-        'team': ['Analysis', 'Processing', 'Development', 'Manager', 'Arquitecture'],
-    }
-    data_frame = pd.DataFrame(data)
-    result = data_frame.to_dict(orient='records')
-    return render(request, 'demo_pandas.html', {'result': result})
 
-def demo_geopandas(request):
-    path_to_data = get_path("nybb")
-    gdf = gpd.read_file(path_to_data)
-    return render(request, 'demo_geopandas.html', {'gdf': gdf})
+# ===##############################################################=== #
+# ========          Import seguro de rpy2 conversion        ========== #
 
-def demo_rasterio(request):
-    with rasterio.open('.\static/backend\img\gadas.tif') as dataset:
-        mask = dataset.dataset_mask()
-        for geom, val in rasterio.features.shapes(
-            mask, transform=dataset.transform):
-            geom = rasterio.warp.transform_geom(
-            dataset.crs, 'EPSG:4326', geom, precision=6)
-            return render(request, 'demo_rasterio.html', {'geom': geom})
 
-# ===#################################################################=== #
+# from rpy2.robjects import conversion
+# try:
+#     from rpy2.robjects.conversion import _converter as rpy2_converter  # para versiones nuevas
+# except ImportError:
+#     from rpy2.robjects import default_converter as rpy2_converter  # versiones antiguas
 
-def demo_tqdm(request):
-    # ps = []
-    for i in tqdm(range(10), desc='Processing in view'):
-        count = f'"Done processing. Check server logs for tqdm output", <h1>Iteration {i+1} of 10</h1>'
-        time.sleep(0.5)
-    return HttpResponse(count)
+# # def demo_maxent(request, project_name="maxent_invias"):
+# def demo_maxent(request, project_name):
+    
+#     """
+#     Vista para ejecutar el flujo completo de MaxEnt en un proyecto dado.
+#     Llama directamente a la clase MaxEntWorkflow y maneja el contexto de rpy2.
+#     """
 
-# ===#################################################################=== #
-# ========          Import seguro de rpy2 conversion           ========== #
+#     if request.method != "GET":
+#         return JsonResponse({"error": "Método no permitido. Usa GET."}, status=405)
+
+#     try:
+#         # Crear la instancia del flujo
+#         workflow = MaxEntWorkflow(project_name=project_name)
+
+#         # Forzar el contexto de conversión de rpy2 (clave para evitar el error de contextvars)
+#         with conversion.localconverter(rpy2_converter):
+#             workflow.run()
+
+#         return JsonResponse({
+#             "status": "ok",
+#             "message": f"Proyecto {project_name} procesado correctamente.",
+#             "result_path": os.path.join(settings.MEDIA_URL, "maxent_projects", project_name, workflow.result_folder)
+#         })
+
+#     except Exception as e:
+#         traceback_str = traceback.format_exc()
+#         print(traceback_str)
+#         return JsonResponse({
+#             "status": "error",
+#             "message": str(e),
+#             "traceback": traceback_str
+#         }, status=500)
+
 
 from rpy2.robjects import conversion
 try:
@@ -296,40 +298,71 @@ except ImportError:
     from rpy2.robjects import default_converter as rpy2_converter  # versiones antiguas
 
 # def demo_maxent(request, project_name="maxent_invias"):
-def demo_maxent(request, project_name):
-    
+
+from rpy2.robjects import default_converter
+from rpy2.robjects.conversion import localconverter
+
+@csrf_exempt
+def demo_maxent(request):
     """
-    Vista para ejecutar el flujo completo de MaxEnt en un proyecto dado.
-    Llama directamente a la clase MaxEntWorkflow y maneja el contexto de rpy2.
+    Ejecuta MaxEnt para todas las regiones encontradas en MEDIA_ROOT/jackknife.
+    Cada carpeta = una región = una corrida de MaxEnt.
+    Uso: GET /demos/maxent/run_safe/
     """
 
     if request.method != "GET":
-        return JsonResponse({"error": "Método no permitido. Usa GET."}, status=405)
+        return HttpResponseNotAllowed(["GET"])
 
     try:
-        # Crear la instancia del flujo
-        workflow = MaxEntWorkflow(project_name=project_name)
+        jackknife_root = os.path.join(settings.MEDIA_ROOT, "jacknife")
 
-        # Forzar el contexto de conversión de rpy2 (clave para evitar el error de contextvars)
-        with conversion.localconverter(rpy2_converter):
-            workflow.run()
+        if not os.path.isdir(jackknife_root):
+            return JsonResponse(
+                {"status": "error", "message": "No existe la carpeta jackknife"},
+                status=404
+            )
+
+        # Detectar todas las regiones
+        regiones = [
+            d for d in os.listdir(jackknife_root)
+            if os.path.isdir(os.path.join(jackknife_root, d))
+        ]
+
+        if not regiones:
+            return JsonResponse(
+                {"status": "error", "message": "No hay regiones dentro de jackknife"},
+                status=400
+            )
+
+        resultados = {}
+
+        # ===============================
+        # Ejecutar workflow SECUENCIAL y seguro
+        # ===============================
+        for region in regiones:
+            try:
+                workflow = MaxEntWorkflow(project_name=region)
+                # Garantizar contexto de rpy2 dentro del mismo thread
+                with localconverter(default_converter):
+                    workflow.run()
+                resultados[region] = "OK"
+            except Exception as e:
+                resultados[region] = f"ERROR: {str(e)}"
 
         return JsonResponse({
             "status": "ok",
-            "message": f"Proyecto {project_name} procesado correctamente.",
-            "result_path": os.path.join(settings.MEDIA_URL, "maxent_projects", project_name, workflow.result_folder)
+            "regiones_procesadas": regiones,
+            "resultados": resultados
         })
 
     except Exception as e:
-        traceback_str = traceback.format_exc()
-        print(traceback_str)
         return JsonResponse({
             "status": "error",
             "message": str(e),
-            "traceback": traceback_str
+            "traceback": traceback.format_exc()
         }, status=500)
 
-
+        
 #========================================================#
 # R libraries #
 import rpy2.robjects as robjects
@@ -337,28 +370,6 @@ from rpy2.robjects import r, default_converter
 from rpy2.robjects.conversion import localconverter
 from django.http import HttpResponse
 
-def demo_dismo(request):
-    robjects.r('''
-    set.seed(123)
-    valores <- sample(1:100, 10)
-    promedio <- mean(valores)
-    desviacion <- sd(valores)
-    ''')
-
-    with localconverter(default_converter):
-        valores = robjects.r['valores']
-        promedio = robjects.r['promedio'][0]
-        desviacion = robjects.r['desviacion'][0]
-
-    resultado = f"""
-    Lista de valores: {list(valores)}
-    Promedio: {promedio}
-    Desviación estándar: {desviacion}
-    """
-
-    # return HttpResponse(resultado)
-
-    return render(request, 'R_cran/demo_dismo.html', {'resultado': resultado})
 
 
 # https://copilot.microsoft.com/chats/Vjk6tHqi3JtriP2H1xZA3
@@ -432,27 +443,6 @@ def demo_gee(request):
 #             return JsonResponse({'error': 'No se pudo obtener el archivo'}, status=500)
 #     except Exception as e:
 #         return JsonResponse({'error': str(e)}, status=500)
-
-import requests
-from django.http import JsonResponse
-
-def demo_arcgis(request, project_name):
-    # url = "https://storage.googleapis.com/invias/maps_invias/geojson/mapa1.geojson"
-    media_folder  = os.path.join(settings.MEDIA_ROOT, 'maxent_projects', project_name, 'RasterResult', 'salida.geojson')
-
-    # response = requests.get(url)
-    try:
-        with open(media_folder, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-            # if response.status_code == 200:
-                # data = response.json()
-                # return JsonResponse(response.json(), safe=False)
-            # print(data)
-            # return render(request, 'gee/arcgis.html', {'data': data})
-            return render(request, 'gee/arcgis.html', {'data': data})
-        
-    except Exception as e:
-        return JsonResponse({"error": "No se pudo obtener el archivo str(e)"}, status=500)
 
 
 def danger(request):
@@ -641,3 +631,18 @@ def distances_way(request):
     response = request.get(data_url)
     return data_url
     
+# ================================================================== #
+# login user
+def sk_login(request):
+    return render(request, "login.html")
+
+# Sukubun database
+def dbSukubun(request):
+    if request.method == "POST":
+        form = sukubunForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            return redirect('db_sukubun')
+    else:
+        form = sukubunForm()
+    return render(request, "sukubun.html", {"form": form})

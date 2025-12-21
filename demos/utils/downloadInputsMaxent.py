@@ -23,11 +23,6 @@ PRODUCTS = [
         "base_prefix": "SRTM/",
         "folder_regex": r"^SRTM/(SRTM_\d{8}_\d{4})/$",
     },
-    {
-        "name": "raster_IN",
-        "base_prefix": "raster_IN",
-        # "folder_regex": "rater_IN",
-    }
 ]
 
 

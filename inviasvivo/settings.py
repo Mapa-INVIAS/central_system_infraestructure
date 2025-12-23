@@ -187,7 +187,7 @@ GS_CREDENTIALS = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS') # Accesos a la
 # GS_BUCKET_NAME = 'invias' # Nombre del bucket objetivo
 # GS_PROJECT_ID = 'complete-energy-448804-i2' # Identificador del bucket objetivo
 
-GS_CREDENTIALS_FILE = "C:\Program Files\Ampps\www\inviasvivo\inviasvivo\credentials\geoinformatica.json"
+GS_CREDENTIALS_FILE = "C:\Program Files\Ampps\www\inviasvivo\credentials\credentials.json"
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(GS_CREDENTIALS_FILE)
 
 GS_PROJECT_ID = 'geoinformatica-442522' # Identificador del bucket objetivo

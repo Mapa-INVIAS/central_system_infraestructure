@@ -66,71 +66,64 @@ flowchart TD
 
 ```
 
-## Pasos para instalación de R en el server
+## Pasos para instalación de R en el serveridor
 
 - sudo apt update
 - sudo apt install --no-install-recommends software-properties-common dirmngr -y
-
 - wget -qO- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc | sudo tee -a /etc/apt/trusted.gpg.d/cran_ubuntu_key.asc
-
 - sudo add-apt-repository "deb https://cloud.r-project.org/bin/linux/ubuntu noble-cran40/"
-
 - sudo apt update
 - sudo apt install r-base r-base-dev -y
 
 
-## Pasos para correr el entorno de trabajo Django
-
-- python3 -m venv venv
-- pip install -r requirements.txt
-- python -m manage.py runserver
-
-
-## Crear el entorno de trabajo con conda
-
-- python convert_txt_to_yml.py requirements.txt environment.yml mi_entorno
-- conda env create -f environment.yml
-
 ## Paso con conda
 - ir a https://docs.conda.io/en/latest/miniconda.html
-https://www.anaconda.com/download
-
-- conda --version
-
+       https://www.anaconda.com/download
 - conda create -n r_env python=3.10 r-base rpy2 -c conda-forge
-
-- conda activate r_env
-
-- python script.py
-
-## Instalación de paquetes del proyecto con Conda
-
-- conda install -c conda-forge r_env [package] <!-- verificar cuales son las librerias que se requieren instalar o correr el archivo requirements.txt en conda -->
-conda install conda-forge::[package] <!-- Para el caso de esta configuración -->
-- conda activate r_env
-
-## Creación de archivo de requisitos
-
-- pip freeze > requirements.txt
-- conda list --export > requirements.txt
+- conda activate r_env <!-- Activacion del entorno -->
+- conda deactivate r_env <!-- Desactivación el entorno -->
 
 ## Instalación de librerias del proyecto en el entorno virtual
 
-- pip install -r requirements.txt
-- conda install --file requirements.txt
+- conda --version <!-- Verificar versión de conda -->
+- conda env create -f environment.yml <!-- Creación del entorno virtual -->
+- conda create --name r_env --file requirements.txt <!-- Creación del entorno con los requerimientos -->
+- conda env update -f environment.yml <!-- Actualización del entorno virtual -->
+- conda env list <!-- Listar los entornos virtuales y verificar si existe el reciencreado -->
+- conda activate r_env <!-- Activación del entorno de virtual -->
+- conda update --all <!-- Actualización de todo el entorno -->
+
+## Creación de archivo de requisitos
+
+- conda list --export > requirements.txt
+- Ejecutar el [[make_yml.py])(https://github.com/Mapa-INVIAS/central_system_infraestructure/blob/main/make_yml.py)] <!-- Código para generación del environment.yml -->
+- conda env export > environment.yml <!-- Exporta la configuración del entorno -->
+- python make_yml.py requirements.txt environment.yml r_env <!-- Modo de ejecución código make_yml.py | r_env es el entorno -->
+- conda env create -f environment.yml
+- conda env update -f environment.yml <!-- Instalación de paquetes faltantes y actualización de versiones distintintas -->
+### Ideal
+- conda env export --from-history > environment.yml <!-- Solo genera las dependencias relevantes -->
+- conda list | awk '{print $1}' > requirements.txt <!-- Genera las dependiencias sin verión -->
+- conda env export --from-history | grep -v "^prefix:" > environment.yml <!-- Genera las dependendencias sin versión -->
+
+## Pasos para correr el entorno de trabajo Django
+
+- python -m manage.py runserver <!-- Desplegar en el puerto por defecto 8000  -->
+- python manage.py runserver 8080 <!-- Desplegar en el puerto 8080 -->
 
 ## Permisos de acceso
 
 - earthengine authenticate <!-- Esta línea se debe ejecutar en la terminal -->
+- ~/.config/earthengine/credentials <!-- Verificar en el folder que se crearon las credenciales -->
+- export GOOGLE_APPLICATION_CREDENTIALS="/credentials/credentials.json" <!-- Se correr este comando en la shell -->
+- setx GOOGLE_APPLICATION_CREDENTIALS "ruta\credentials\credentials.json" <!-- Para que sea permanente -->
 
-<!-- Verificar en el folder que se crearon las credenciales -->
+## Instalación individual de paquetes del proyecto con Conda
 
-- ~/.config/earthengine/credentials
+- conda install conda-forge::[package] <!-- Para el caso de esta configuración -->
 
-<!-- Se correr este comando en la shell -->
-- export GOOGLE_APPLICATION_CREDENTIALS="/credentials/credentials.json"
-<!-- Para que sea permanente -->
-- setx GOOGLE_APPLICATION_CREDENTIALS "ruta\credentials\credentials.json"
+## Errores comnunes durante corrida del modelo MAXENT [[maxent02.py](https://github.com/Mapa-INVIAS/central_system_infraestructure/blob/main/demos/utils/maxent02.py)]
 
-
-
+- Bajar el sistema 
+- Eliminar toda la carpeta "00LOCK" ['\miniconda3\envs\r_env\Lib\R\library/00LOCK']
+- Volver a activar el sistema (inviasvivo)

@@ -1,3 +1,5 @@
+#  Reinicializar la conexión con el Bucket de Google Cloud Storage.
+
 import ee
 from django.conf import settings
 

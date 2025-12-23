@@ -20,9 +20,13 @@ urlpatterns = [
     # Generador de insumos
     path("gee/run-s2/", views.run_s2),
     path('exports/gee-s2', views.download_exports, name='download_exports'),
+    path('buffer-invias/', views.generar_buffer_invias, name='buffer_invias'),
+    path('pipeline/run', views.run_pipeline, name="run_pipeline"),
+    path('kripley/run', views.runHotRipley, name="run_kripley"),
+    path('makemosaic/run', views.run_mosaic_nacional_view, name="run_mosaic"),
     ################################################################ 
-    path("run/", views.run_mosaics_page, name="run_mosaics_page"),
-    path("status/<uuid:task_id>/", views.mosaics_status_page, name="mosaics_status_page"),
+    # path("run/", views.run_mosaics_page, name="run_mosaics_page"),
+    # path("status/<uuid:task_id>/", views.mosaics_status_page, name="mosaics_status_page"),
     # 
     path("pipeline/", views.run_pipeline, name="run_pipeline"),
     # ============================================================== #

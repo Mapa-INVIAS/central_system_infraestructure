@@ -1,4 +1,4 @@
-import time, os, schedule, json, rasterio, traceback, ee, geemap, requests
+import time, os, schedule, json, rasterio, traceback, ee, geemap, requests, json, uuid
 from django.shortcuts import render, redirect
 from django.http import JsonResponse, FileResponse, HttpResponseNotAllowed
 from django.http import HttpResponse
@@ -7,7 +7,7 @@ from google.cloud import storage
 from google.cloud.storage import transfer_manager
 from rasterio.features import shapes
 from django.views.decorators.csrf import csrf_exempt
-from .utils.maxent02 import MaxEntWorkflow  # importa tu clase
+from .utils.maxentModel02 import MaxEntWorkflow  # importa tu clase
 from .utils.downloadInputsMaxent import download_latest_exports
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
 
@@ -24,6 +24,8 @@ import pandas as pd
 import geopandas as gpd
 import rasterio as rs
 from tqdm import tqdm
+from io import BytesIO
+from pathlib import Path
 from collections import defaultdict
 
 ## ========  Sample external data ======== ##
@@ -31,7 +33,6 @@ from collections import defaultdict
 from geodatasets import get_path
 import rasterio.features
 import rasterio.warp
-
 
 # ========================================= #
 # Current conditions within the target bucket
@@ -85,8 +86,15 @@ bucket_name = "invias_mapa_vulnerabilidad_faunistica"
 
 # list_blobs(bucket_name)
 
-########################################################################
-########################################################################
+
+###############################################################################################################################
+# =========================================================================================================================== #
+#
+# PREPROCESOS
+#
+# =========================================================================================================================== #
+###############################################################################################################################
+
 
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
@@ -137,33 +145,53 @@ def download_exports(request):
 # Crea los mosaicos
 
 
-from django.contrib.admin.views.decorators import staff_member_required
-from .tasks import run_mosaics_task
-from celery.result import AsyncResult
+# from django.contrib.admin.views.decorators import staff_member_required
+# from .tasks import run_mosaics_task
+# from celery.result import AsyncResult
 
 
-@staff_member_required
-def run_mosaics_page(request):
-    """
-    Página web para lanzar el procesamiento
-    """
-    if request.method == "POST":
-        task = run_mosaics_task.delay()
-        return redirect("mosaics_status_page", task_id=task.id)
+# @staff_member_required
+# def run_mosaics_page(request):
+#     """
+#     Página web para lanzar el procesamiento
+#     """
+#     if request.method == "POST":
+#         task = run_mosaics_task.delay()
+#         return redirect("mosaics_status_page", task_id=task.id)
 
-    return render(request, "mosaic.html")
+#     return render(request, "mosaic.html")
 
 
 
-@staff_member_required
-def mosaics_status_page(request, task_id):
-    result = AsyncResult(task_id)
+# @staff_member_required
+# def mosaics_status_page(request, task_id):
+#     result = AsyncResult(task_id)
 
-    return render(request, "mosaicstatus.html", {
-        "task_id": task_id,
-        "state": result.state,
-        "result": result.result
-    })
+#     return render(request, "mosaicstatus.html", {
+#         "task_id": task_id,
+#         "state": result.state,
+#         "result": result.result
+#     })
+
+
+from .utils.makeMosaicInputs import full_mosaic_nacional
+
+@csrf_exempt
+@require_POST
+def run_mosaic_nacional_view(request):
+    payload = json.loads(request.body or "{}")
+
+    exports_dir = Path(settings.MEDIA_ROOT) / "EXPORTS"
+
+    results = full_mosaic_nacional(
+        exports_dir=exports_dir,
+        run_s2=payload.get("run_s2", True),
+        run_hansen=payload.get("run_hansen", True),
+        run_srtm=payload.get("run_srtm", True),
+    )
+
+    return JsonResponse({"status": "ok", "outputs": results})
+
 
 
 ########################################################################
@@ -210,159 +238,43 @@ print('si esta corriendo')
 ########################################################################
 
 # Proceso de descarga de capas paralelas
+from .utils.parallelServices import pipeline_process
 
+from pathlib import Path
+from django.conf import settings
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from threading import Thread
-from .utils.parallelLayers import ejecutar_pipeline
-
 
 @csrf_exempt
 def run_pipeline(request):
-    if request.method != "POST":
-        return JsonResponse({"error": "Metodo errado"}, status=405)
-    
-    base_path = request.POST.get("path")
-    geojson = request.POST.get("geojson")
+    base_dir = Path(settings.BASE_DIR) / "static" / "backend" / "geodata"
+    input_name = base_dir / "CapaReferencia" / "Colombia.geojson"
 
-    if not base_path or not geojson:
-        return JsonResponse({"error": "Faltan parametros"}, status=400)
-    
-    t = Thread(
-        target = ejecutar_pipeline,
-        args = (base_path, geojson),
-        daemon = True
+    output_dir = Path(settings.MEDIA_ROOT) / "AutoINVIAS"
+
+    if not input_name.exists():
+        return JsonResponse(
+            {"status": "error", "message": f"No se encontró {input_name}"}, status=404
+        )
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    try:
+        pipeline_process(output_dir, input_name)
+    except Exception as e:
+        return JsonResponse(
+            {"status": "error", "message": str(e)}, status=500
+        )
+
+    return JsonResponse(
+        {"status": "ok", "message": "Pipeline ejecutado"}
     )
 
-    t.start()
 
-    return JsonResponse({
-        "status": "ok",
-        "message": "Se ejecuta pipeline"
-    })
 
 # ==================================================================== #
 # #################################################################### #
-
-
-
-# ===##############################################################=== #
-# ========          Import seguro de rpy2 conversion        ========== #
-
-
-# from rpy2.robjects import conversion
-# try:
-#     from rpy2.robjects.conversion import _converter as rpy2_converter  # para versiones nuevas
-# except ImportError:
-#     from rpy2.robjects import default_converter as rpy2_converter  # versiones antiguas
-
-# # def demo_maxent(request, project_name="maxent_invias"):
-# def demo_maxent(request, project_name):
-    
-#     """
-#     Vista para ejecutar el flujo completo de MaxEnt en un proyecto dado.
-#     Llama directamente a la clase MaxEntWorkflow y maneja el contexto de rpy2.
-#     """
-
-#     if request.method != "GET":
-#         return JsonResponse({"error": "Método no permitido. Usa GET."}, status=405)
-
-#     try:
-#         # Crear la instancia del flujo
-#         workflow = MaxEntWorkflow(project_name=project_name)
-
-#         # Forzar el contexto de conversión de rpy2 (clave para evitar el error de contextvars)
-#         with conversion.localconverter(rpy2_converter):
-#             workflow.run()
-
-#         return JsonResponse({
-#             "status": "ok",
-#             "message": f"Proyecto {project_name} procesado correctamente.",
-#             "result_path": os.path.join(settings.MEDIA_URL, "maxent_projects", project_name, workflow.result_folder)
-#         })
-
-#     except Exception as e:
-#         traceback_str = traceback.format_exc()
-#         print(traceback_str)
-#         return JsonResponse({
-#             "status": "error",
-#             "message": str(e),
-#             "traceback": traceback_str
-#         }, status=500)
-
-
-from rpy2.robjects import conversion
-try:
-    from rpy2.robjects.conversion import _converter as rpy2_converter  # para versiones nuevas
-except ImportError:
-    from rpy2.robjects import default_converter as rpy2_converter  # versiones antiguas
-
-# def demo_maxent(request, project_name="maxent_invias"):
-
-from rpy2.robjects import default_converter
-from rpy2.robjects.conversion import localconverter
-
-@csrf_exempt
-def demo_maxent(request):
-    """
-    Ejecuta MaxEnt para todas las regiones encontradas en MEDIA_ROOT/jackknife.
-    Cada carpeta = una región = una corrida de MaxEnt.
-    Uso: GET /demos/maxent/run_safe/
-    """
-
-    if request.method != "GET":
-        return HttpResponseNotAllowed(["GET"])
-
-    try:
-        jackknife_root = os.path.join(settings.MEDIA_ROOT, "jacknife")
-
-        if not os.path.isdir(jackknife_root):
-            return JsonResponse(
-                {"status": "error", "message": "No existe la carpeta jackknife"},
-                status=404
-            )
-
-        # Detectar todas las regiones
-        regiones = [
-            d for d in os.listdir(jackknife_root)
-            if os.path.isdir(os.path.join(jackknife_root, d))
-        ]
-
-        if not regiones:
-            return JsonResponse(
-                {"status": "error", "message": "No hay regiones dentro de jackknife"},
-                status=400
-            )
-
-        resultados = {}
-
-        # ===============================
-        # Ejecutar workflow SECUENCIAL y seguro
-        # ===============================
-        for region in regiones:
-            try:
-                workflow = MaxEntWorkflow(project_name=region)
-                # Garantizar contexto de rpy2 dentro del mismo thread
-                with localconverter(default_converter):
-                    workflow.run()
-                resultados[region] = "OK"
-            except Exception as e:
-                resultados[region] = f"ERROR: {str(e)}"
-
-        return JsonResponse({
-            "status": "ok",
-            "regiones_procesadas": regiones,
-            "resultados": resultados
-        })
-
-    except Exception as e:
-        return JsonResponse({
-            "status": "error",
-            "message": str(e),
-            "traceback": traceback.format_exc()
-        }, status=500)
-
-        
+   
 #========================================================#
 # R libraries #
 import rpy2.robjects as robjects
@@ -399,50 +311,6 @@ def demo_gee(request):
     # Convierte el mapa en HTML
     map_html = Map.to_html()
     return render(request, 'gee/map.html', {'map_html': map_html})
-
-
-# Arcgis demo
-# def demo_arcgis(request):
-#     layer_url = "https://storage.googleapis.com/invias/maps_invias/map.geojson"
-#     return render(request, "gee/arcgis.html", {"layer_url": layer_url})
-
-# import requests
-# from django.http import JsonResponse
-# # Arcgis demo
-# def demo_arcgis(request):
-#     layer_url = 'https://storage.googleapis.com/invias/maps_invias/map.geojson'
-#     response = requests.get(layer_url)
-#     if response.status_code == 200:
-#         # return JsonResponse(response.json(), safe=False)
-#         return render(request, 'gee/arcgis.html', {"layer_url": layer_url})
-#     return JsonResponse({'error': 'No se pudo obtener el archivo'}, status=500)
-
-# def demo_arcgis(request):
-#     geojson_url = 'https://storage.googleapis.com/invias/maps_invias/map.geojson'
-#     return render(request, 'gee/arcgis.html', {'geojson_url': geojson_url})
-
-
-# import requests
-# from django.http import JsonResponse
-# from django.views.decorators.csrf import csrf_exempt
-# from django.views.decorators.http import require_GET
-# from django.views.decorators.clickjacking import xframe_options_exempt
-
-# @csrf_exempt
-# @require_GET
-# @xframe_options_exempt
-# def demo_arcgis(request):
-#     # URL del archivo GeoJSON en Google Cloud Storage
-#     geojson_url = 'https://storage.googleapis.com/invias/maps_invias/map.geojson'
-
-#     try:
-#         response = requests.get(geojson_url)
-#         if response.status_code == 200:
-#             return JsonResponse(response.json(), safe=False)
-#         else:
-#             return JsonResponse({'error': 'No se pudo obtener el archivo'}, status=500)
-#     except Exception as e:
-#         return JsonResponse({'error': str(e)}, status=500)
 
 
 def danger(request):
@@ -508,8 +376,6 @@ def layer(request):
 
 
 # list_blobs('invias')
-
-
 
 
 # def mi_funcion():
@@ -584,12 +450,307 @@ def layer(request):
 # print('si esta corriendo')       
 # download_bucket('invias', prefix="maps_invias/geojson/")
 
+    
+#########################################################################
+# Funciones de consumo de fuentes paralelas
+
+def distances_way(request):
+    data_url = "https://machine.domain.com/webadaptor/rest/services"
+    response = request.get(data_url)
+    return data_url
+    
+# ================================================================== #
+# login user
+def sk_login(request):
+    return render(request, "login.html")
+
+# Sukubun database
+def dbSukubun(request):
+    if request.method == "POST":
+        form = sukubunForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            return redirect('db_sukubun')
+    else:
+        form = sukubunForm()
+    return render(request, "sukubun.html", {"form": form})
+
+
+# ===================================================================== #
+#########################################################################
+# K-riplay
+
+from .utils.kripley02 import KRipley_HS
+
+@csrf_exempt
+@require_POST
+def runHotRipley(request):
+
+    try:
+        # payload = json.loads(request.body.decode("utf-16"))
+
+        if not request.body:
+            return JsonResponse({"status": "error", "detail": "El cuerpo de la petición está vacío"}, status=400)
+
+        try:
+            payload = json.loads(request.body.decode("utf-8"))
+        except json.JSONDecodeError as e:
+            return JsonResponse({"status": "error", "detail": f"JSON inválido: {str(e)}"}, status=400)
+
+        # ============================
+        # PARÁMETROS OBLIGATORIOS
+        # ============================
+
+        media_root = Path(settings.MEDIA_ROOT)
+        uploads_folder = media_root / "uploads"
+
+        excel_files = list(uploads_folder.glob("*.xlsx")) + list(uploads_folder.glob("*.xls"))
+
+        if not excel_files:
+            raise FileNotFoundError(f"No se encontró ningún archivo Excel en {uploads_folder}")
+
+        excel_path = max(excel_files, key=lambda f: f.stat().st_mtime)
+
+        print("Último Excel encontrado:", excel_path)
+
+        print("excelpath")
+        print(excel_path)
+
+        roads_path  = media_root / "Vias_Total" /"Vias_Total.shp"
+
+        if not excel_path.exists():
+            raise FileNotFoundError(f"No existe el Excel: {excel_path}")
+
+        if not roads_path.exists():
+            raise FileNotFoundError(f"No existe el SHP de vías: {roads_path}")
+
+        excel_sheet = payload.get("excel_sheet", "SUKUBUN")
+        lat_field   = payload.get("lat_field", "y")
+        lon_field   = payload.get("lon_field", "x")
+
+        # ============================
+        # PARÁMETROS NUMÉRICOS
+        # ============================
+        simplify_tolerance_m = float(payload.get("simplify_tolerance_m", 1.0))
+        precision_scale      = float(payload.get("precision_scale", 0.001))
+        segment_spacing_m    = float(payload.get("segment_spacing_m", 50.0))
+        snap_tolerance_m     = float(payload.get("snap_tolerance_m", 90.0))
+        r_start_m            = float(payload.get("r_start_m", 100.0))
+        r_step_m             = float(payload.get("r_step_m", 500.0))
+
+        n_sim_ripley  = int(payload.get("n_sim_ripley", 100))
+        n_sim_hotspot = int(payload.get("n_sim_hotspot", 100))
+        random_seed   = int(payload.get("random_seed", 321))
+
+        hs_point_spacing_m   = float(payload.get("hs_point_spacing_m", 50.0))
+        n_workers            = int(payload.get("n_workers", 2))
+        max_hs_sample_points = payload.get("max_hs_sample_points")
+
+        plot_png = bool(payload.get("plot_png", True))
+
+        # ============================
+        # OUTPUT
+        # ============================
+        run_id = uuid.uuid4().hex[:8]
+
+        output_folder = (
+            Path(settings.MEDIA_ROOT)
+            / "kripley_runs"
+            / run_id
+        )
+        output_folder.mkdir(parents=True, exist_ok=True)
+
+        # ============================
+        # NOMBRES DE ARCHIVOS
+        # ============================
+        export_csv_hotspots_name = "hotspots.csv"
+        export_csv_ripley_name = "ripley_L.csv"
+        export_shp_vias_colapsadas_name = "vias_simplificadas.shp"
+
+        # ============================
+        # EJECUCIÓN REAL
+        # ============================
+        KRipley_HS(
+            excel_path,
+            excel_sheet,
+            lat_field,
+            lon_field,
+            roads_path,
+            str(output_folder),
+            simplify_tolerance_m,
+            precision_scale,
+            segment_spacing_m,
+            snap_tolerance_m,
+            r_start_m,
+            r_step_m,
+            n_sim_ripley,
+            random_seed,
+            n_sim_hotspot,
+            hs_point_spacing_m,
+            export_csv_hotspots_name,
+            export_csv_ripley_name,
+            export_shp_vias_colapsadas_name,
+            plot_png,
+            n_workers,
+            max_hs_sample_points
+        )
+
+        return JsonResponse({
+            "status": "ok",
+            "run_id": run_id,
+            "output_folder": str(output_folder),
+            "outputs": {
+                "ripley": export_csv_ripley_name,
+                "hotspots": export_csv_hotspots_name,
+                "vias": export_shp_vias_colapsadas_name,
+                "metadata": "metadata.json"
+            }
+        })
+
+    except Exception as e:
+        return JsonResponse(
+            {
+                "status": "error",
+                "detail": str(e)
+            },
+            status=500
+        )
 
 
 
+##########################################################################
+# ====================================================================== #
+# Red vial de colombia INVIAS
+
+def generar_buffer_invias(request):
+
+    url = "https://storage.googleapis.com/invias/maps_invias/dem_colombia/RedVialODAGOL_-7622711643947703228.geojson"
+    carpeta_salida = Path(settings.MEDIA_ROOT) / "viasINVIAS"
+    nombre_salida = "vias_invias.shp"
+
+    carpeta_salida.mkdir(parents=True, exist_ok=True)
+    shp_path = carpeta_salida / nombre_salida
+
+    try:
+        # Descargar y leer
+        response = requests.get(url, timeout=60)
+        response.raise_for_status()
+        gdf = gpd.read_file(BytesIO(response.content))
+
+        # Reproyectar a metros
+        gdf = gdf.to_crs(epsg=9377)
+
+        # Buffer + dissolve
+        gdf["geometry"] = gdf.buffer(200)
+        gdf = gdf.dissolve()
+
+        # Reproyectar a WGS84 y guardar shapefile
+        gdf = gdf.to_crs(epsg=4326)
+        gdf.to_file(shp_path, driver="ESRI Shapefile")
+
+        # Construir URL pública
+        archivo_url = settings.MEDIA_URL + f"INVIAS/{nombre_salida}"
+
+        return JsonResponse({
+            "status": "ok",
+            "mensaje": "Shapefile creado exitosamente",
+            "archivo": archivo_url
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            "status": "error",
+            "mensaje": str(e)
+        }, status=500)
+
+
+###############################################################################################################################
+# =========================================================================================================================== #
+#
+# PROCESO
+#
+# =========================================================================================================================== #
+###############################################################################################################################
+
+from rpy2.robjects import conversion
+try:
+    from rpy2.robjects.conversion import _converter as rpy2_converter  # para versiones nuevas
+except ImportError:
+    from rpy2.robjects import default_converter as rpy2_converter  # versiones antiguas
+
+from rpy2.robjects import default_converter
+from rpy2.robjects.conversion import localconverter
+
+@csrf_exempt
+def demo_maxent(request):
+    """
+    Ejecuta MaxEnt para todas las regiones encontradas en MEDIA_ROOT/jackknife.
+    Cada carpeta = una región = una corrida de MaxEnt.
+    Uso: GET /demos/maxent/run_safe/
+    """
+
+    if request.method != "GET":
+        return HttpResponseNotAllowed(["GET"])
+
+    try:
+        jackknife_root = os.path.join(settings.MEDIA_ROOT, "jacknife")
+
+        if not os.path.isdir(jackknife_root):
+            return JsonResponse(
+                {"status": "error", "message": "No existe la carpeta jackknife"},
+                status=404
+            )
+
+        # Detectar todas las regiones
+        regiones = [
+            d for d in os.listdir(jackknife_root)
+            if os.path.isdir(os.path.join(jackknife_root, d))
+        ]
+
+        if not regiones:
+            return JsonResponse(
+                {"status": "error", "message": "No hay regiones dentro de jackknife"},
+                status=400
+            )
+
+        resultados = {}
+
+        # =============================== #
+        # Ejecutar workflow SECUENCIAL    #
+        # =============================== #
+        for region in regiones:
+            try:
+                workflow = MaxEntWorkflow(project_name=region)
+                # Garantizar contexto de rpy2 dentro del mismo thread
+                with localconverter(default_converter):
+                    workflow.run()
+                resultados[region] = "OK"
+            except Exception as e:
+                resultados[region] = f"ERROR: {str(e)}"
+
+        return JsonResponse({
+            "status": "ok",
+            "regiones_procesadas": regiones,
+            "resultados": resultados
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            "status": "error",
+            "message": str(e),
+            "traceback": traceback.format_exc()
+        }, status=500)
+
+
+###############################################################################################################################
+# =========================================================================================================================== #
+#
+# POSPROCESOS
+#
+# =========================================================================================================================== #
+###############################################################################################################################
 
 # Tranformar de tiff a geojson
-
 def tiff_geo(request, project_name):
     media_folder  = os.path.join(settings.MEDIA_ROOT, 'maxent_projects', project_name, 'RasterResult', 'resultado_maxent.tif')
 
@@ -620,29 +781,3 @@ def tiff_geo(request, project_name):
     
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
-    
-
-
-
-# Funciones de consumo de fuentes paralelas
-
-def distances_way(request):
-    data_url = "https://machine.domain.com/webadaptor/rest/services"
-    response = request.get(data_url)
-    return data_url
-    
-# ================================================================== #
-# login user
-def sk_login(request):
-    return render(request, "login.html")
-
-# Sukubun database
-def dbSukubun(request):
-    if request.method == "POST":
-        form = sukubunForm(request.POST, request.FILES)
-        if form.is_valid():
-            form.save()
-            return redirect('db_sukubun')
-    else:
-        form = sukubunForm()
-    return render(request, "sukubun.html", {"form": form})

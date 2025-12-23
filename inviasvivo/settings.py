@@ -160,7 +160,6 @@ USE_I18N = True
 
 USE_TZ = True
 
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
@@ -169,17 +168,11 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 # STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 MEDIA_URL = '/media/'
 # MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_ROOT = BASE_DIR / "media"
-
-# STATIC_ROOT = os.path.join(BASE_DIR, 'static')
-
-# Production line
-# STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Url del lenguaje R
 # RSCRIPT_PATH = r""
@@ -202,11 +195,7 @@ GS_EMAIL = "geoinformatica-442522@geoinformatica-442522.iam.gserviceaccount.com"
 
 # GCS_CREDENTIALS_FILE = BASE_DIR / ruta_credenciales
 
-print('credeciales aca')
-print(GS_CREDENTIALS_FILE)
-
 GS_BUCKET_NAME = 'invias_mapa_vulnerabilidad_faunistica' # Nombre del bucket objetivo
-
 
 EXPORTS_DIR = MEDIA_ROOT / "exportsGCS"
 

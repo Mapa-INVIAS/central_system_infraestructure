@@ -395,19 +395,3 @@ class DistanciaEuclidiana:
             except Exception:
                 pass
 
-
-# Ejecución
-if __name__ == "__main__":
-
-    CARPETA_RASTER = r"D:/Documents/SCRIPTS/RECOSFA/Auto_INVIAS_2025/out/C_Raster"
-    GEOJSON_REFERENCIA = r"D:/Documents/SCRIPTS/RECOSFA/Auto_INVIAS_2025/Implementacion/CapaReferencia/Colombia.geojson"
-    CARPETA_SALIDA = r"D:/Documents/SCRIPTS/RECOSFA/Auto_INVIAS_2025/out/D_Distancia"
-
-    VALOR_FUENTE = 1
-    BLOQUE_ESCALADO = 0
-
-    DistanciaEuclidiana(CARPETA_RASTER,
-                        GEOJSON_REFERENCIA,
-                        CARPETA_SALIDA,
-                        VALOR_FUENTE,
-                        BLOQUE_ESCALADO)

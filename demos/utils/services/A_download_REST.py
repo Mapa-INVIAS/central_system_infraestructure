@@ -525,41 +525,41 @@ class Downloadserver_REST:
 # ============================================================
 # EJECUCIÓN
 # ============================================================
-if __name__ == "__main__":
-    URL = "https://mapas2.igac.gov.co/server/rest/services/carto/carto100000colombia2019/MapServer"
-    SALIDA = r"D:/Downloads/juanDavid_Sukubun/out2_kr"
-    TARGET_IDS = [20, 25, 26, 35, 36, 37, 39, 41, 42, 44, 47]
-    BBOX = None
+# if __name__ == "__main__":
+#     URL = "https://mapas2.igac.gov.co/server/rest/services/carto/carto100000colombia2019/MapServer"
+#     SALIDA = r"D:/Downloads/juanDavid_Sukubun/out2_kr"
+#     TARGET_IDS = [20, 25, 26, 35, 36, 37, 39, 41, 42, 44, 47]
+#     BBOX = None
 
-    CHUNK_INICIAL = 2000
-    MIN_CHUNK = 200
-    TIMEOUT = 30
-    REINTENTOS = 6
+#     CHUNK_INICIAL = 2000
+#     MIN_CHUNK = 200
+#     TIMEOUT = 30
+#     REINTENTOS = 6
 
-    USAR_TQDM = True
-    USAR_PARALELO = False
-    MAX_WORKERS = 1
-    MAX_DEPTH = 0
-    SLEEP = 0.0
-    UMBRAL_PARALELO = 0
+#     USAR_TQDM = True
+#     USAR_PARALELO = False
+#     MAX_WORKERS = 1
+#     MAX_DEPTH = 0
+#     SLEEP = 0.0
+#     UMBRAL_PARALELO = 0
 
-    FORMATO_SALIDA = "shp"
-    WKID_SALIDA = 4326
+#     FORMATO_SALIDA = "shp"
+#     WKID_SALIDA = 4326
 
 
-    Downloadserver_REST(URL,
-                        SALIDA,
-                        TARGET_IDS,
-                        BBOX,
-                        CHUNK_INICIAL,
-                        MIN_CHUNK,
-                        TIMEOUT,
-                        REINTENTOS,
-                        USAR_TQDM,
-                        USAR_PARALELO,
-                        MAX_WORKERS,
-                        MAX_DEPTH,
-                        SLEEP,
-                        UMBRAL_PARALELO,
-                        FORMATO_SALIDA,
-                        WKID_SALIDA)
+#     Downloadserver_REST(URL,
+#                         SALIDA,
+#                         TARGET_IDS,
+#                         BBOX,
+#                         CHUNK_INICIAL,
+#                         MIN_CHUNK,
+#                         TIMEOUT,
+#                         REINTENTOS,
+#                         USAR_TQDM,
+#                         USAR_PARALELO,
+#                         MAX_WORKERS,
+#                         MAX_DEPTH,
+#                         SLEEP,
+#                         UMBRAL_PARALELO,
+#                         FORMATO_SALIDA,
+#                         WKID_SALIDA)

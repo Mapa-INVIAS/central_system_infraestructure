@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
+from django.conf import settings
 from typing import List, Tuple, Dict, Optional
 
 import numpy as np
@@ -43,7 +44,7 @@ GTIFF = dict(
 # PATHS
 # =========================
 def build_paths(exports_dir: Path) -> Dict[str, Path]:
-    out_root = exports_dir / "MOSAICS"
+    out_root = Path(settings.MEDIA_ROOT) / "MOSAICS"
     return {
         "OUT_ROOT": out_root,
         "OUT_S2": out_root / "S2",

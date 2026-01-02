@@ -17,10 +17,6 @@ from google.cloud import storage
 
 from celery.schedules import crontab
 
-
-
-
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -64,6 +60,11 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
 ]
 
+# Bot message
+BOT_TOKEN = "8171665815:AAH67KHZBevRPhfMhQZLgmPODkIlkvmT7EM"
+BOT_URL = "https://api.telegram.org/bot"+BOT_TOKEN
+BOT_CHAT_ID = "1534579574"
+
 
 # Application definition
 
@@ -84,6 +85,7 @@ INSTALLED_APPS = [
     'backend',
     'demos',
     'clase',
+    'django_cleanup.apps.CleanupConfig',
 ]
 
 MIDDLEWARE = [
@@ -187,7 +189,7 @@ GS_CREDENTIALS = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS') # Accesos a la
 # GS_BUCKET_NAME = 'invias' # Nombre del bucket objetivo
 # GS_PROJECT_ID = 'complete-energy-448804-i2' # Identificador del bucket objetivo
 
-GS_CREDENTIALS_FILE = "C:\Program Files\Ampps\www\inviasvivo\credentials\credentials.json"
+GS_CREDENTIALS_FILE = "C:\Program Files\Ampps\www\inviasvivo\credentials\geoinformatica.json"
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(GS_CREDENTIALS_FILE)
 
 GS_PROJECT_ID = 'geoinformatica-442522' # Identificador del bucket objetivo

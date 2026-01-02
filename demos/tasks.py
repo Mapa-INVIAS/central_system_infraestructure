@@ -1,6 +1,6 @@
 # apps/processing/tasks.py
 from celery import shared_task
-from .utils.makeMosaicInputs import run_all
+from .utils.gee.makeMosaicInputs import run_all
 
 
 @shared_task(bind=True)

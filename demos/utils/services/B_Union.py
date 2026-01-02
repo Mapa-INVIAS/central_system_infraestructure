@@ -69,10 +69,10 @@ class UnirShapefile:
                  max_workers):
 
         archivos = [f for f in os.listdir(carpeta_entrada)
-                    if f.lower().endswith(".shp")]
+                    if f.lower().endswith(".geojson")]
 
         if not archivos:
-            raise RuntimeError("No se encontraron archivos .shp")
+            raise RuntimeError("No se encontraron archivos .geojson")
 
         # metros → grados
         buffer_grados = buffer_metros / 111320.0

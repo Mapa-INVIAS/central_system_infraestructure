@@ -1,16 +1,25 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Ejecutar mosaicos</title>
-</head>
-<body>
-    <h1>Procesamiento de mosaicos</h1>
+{% extends 'index.html' %}
 
-    <form method="post">
+{% block content %}
+
+<h1>Interface para lanzar proceso</h1>
+<h2>Proceso de Luis</h2>
+
+<p>Presione el botón para activar el proceso de generación de insumos. Tenga presente tener las credenciales actualizadas, en caso contrario el sistema se las solicitará.</p>
+
+<div>
+    <form action="{% url 'generate_inputs' %}" method="post">
         {% csrf_token %}
-        <button type="submit">
-            Ejecutar procesamiento
-        </button>
+        <button type="submit">Generar insumos</button>
     </form>
-</body>
-</html>
+    <form action="{% url 'run_pipeline' %}" method="post">
+        {% csrf_token %}
+        <button type="submit">Descargar insumos</button>
+    </form>
+    <form action="{% url 'ejecutar_maxent' %}" method="post">
+        {% csrf_token %}
+        <button type="submit">Ejecurtar modelo maxent</button>
+    </form>
+</div>
+
+{% endblock %}

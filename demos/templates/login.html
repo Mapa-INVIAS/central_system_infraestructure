@@ -1,19 +1,220 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-    <h1>Login de acceso</h1>
-    <section>
-        <article>
-            <label for="">Nombre de usuario</label>
-            <input type="text" name="username" id="">
-            <label for="">Contraseña</label>
-            <input type="password" name="password" id="">
-        </article>
-    </section>
-</body>
-</html>
+{% extends 'index.html' %}
+
+{% block content %}
+
+<style>
+
+/* Reset básico */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+}
+
+/* Header con logo */
+header {
+  background-color: #2c3e50;
+  color: white;
+  padding: 15px;
+  text-align: center;
+}
+
+header img {
+  height: 60px;
+  vertical-align: middle;
+}
+
+header h1 {
+  display: inline-block;
+  margin-left: 10px;
+  font-size: 1.5rem;
+  vertical-align: middle;
+}
+
+/* Centrado del formulario */
+section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 70vh;
+  background-color: #ecf0f1;
+}
+
+form {
+  background: white;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  text-align: center;
+  width: 350px;
+}
+
+form h1 {
+  font-size: 1.2rem;
+  margin-bottom: 20px;
+  color: #34495e;
+}
+
+form input[type="file"],
+form input[type="text"],
+form input[type="submit"],
+form input[type="password"],
+button {
+  display: block;
+  width: 100%;
+  margin: 10px 0;
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #bdc3c7;
+}
+
+form input[type="submit"] {
+  background-color: #3498db;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+form input[type="submit"]:hover {
+  background-color: #2980b9;
+}
+
+button {
+   background-color: #34db95;
+   color: white;
+   border: none;
+   cursor: pointer;
+   transition: background 0.3s ease;
+}
+
+button:hover {
+  background-color: #29b9a3;
+}
+
+/* Footer */
+footer {
+  background-color: #2c3e50;
+  color: white;
+  text-align: center;
+  padding: 15px;
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+}
+
+</style>
+
+<header> 
+   <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/INV%C3%8DAS_Colombia_logo.png/1200px-INV%C3%8DAS_Colombia_logo.png" alt="Logo">
+   <h1>INVIASVIVO:INGRESO</h1>
+</header>
+
+<section>
+   <form id="uploadForm" action="" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+         <h1>Ingrese las credenciales</h1>
+         <input type="text" name="username" id="noteInput" placeholder="Ingresar usuario" required>
+         <input type="password" name="password" id="noteInput" placeholder="Ingresar contraseña" required>
+         <input type="submit" value="Ingresar">
+   </form>
+</section>
+
+<!-- <section>
+   <article>
+      <table id="fileTable" border="1" style="display:none;">
+         <thead>
+            <tr>
+               <td>Name</td>
+               <td>Note</td>
+               <td>Acción</td>
+            </tr>
+         </thead>
+         <tbody>
+            
+         </tbody>
+      </table>
+   </article>
+</section> -->
+
+<footer> <p>&copy; 2025 INVIASVIVO - Todos los derechos reservados</p> </footer>
+
+
+<!-- <script>
+   const form = document.getElementById("uploadForm");
+   const fileInput = document.getElementById("fileInput");
+   const noteInput = document.getElementById("noteInput");
+   const table = document.getElementById("fileTable");
+   const tableBody = table.querySelector("tbody");
+   const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+   form.addEventListener("submit", function(event) {
+      //  event.preventDefault(); // Evita recargar la página
+
+       if (fileInput.files.length > 0) {
+           const file = fileInput.files[0];
+           const fileName = file.name;
+           const noteText = noteInput.value || "Sin nota";
+
+           // Crear fila
+           const row = document.createElement("tr");
+
+           const nameCell = document.createElement("td");
+           nameCell.textContent = fileName;
+
+           const noteCell = document.createElement("td");
+           noteCell.textContent = noteText;
+
+           const actionCell = document.createElement("td");
+           const button = document.createElement("button");
+           button.textContent = "Procesar";
+
+           // Acción del botón: enviar POST a run_pipeline
+           button.onclick = () => {
+            const confirms = confirm("¿Desea lanzar el proceso con" +  fileName + "?");
+            
+            if(confirms) {
+               const formData = new FormData();
+               formData.append("file", file);
+               formData.append("note", noteText);
+
+               fetch("{% url 'run_pipeline' %}", {
+                   method: "POST",
+                   body: formData,
+                   headers: {
+                       "X-CSRFToken": csrftoken 
+                   }
+               })
+               .then(response => response.json())
+               .then(data => {
+                   alert("Servidor respondió: " + JSON.stringify(data));
+               })
+               .catch(error => {
+                   console.error("Error:", error);
+                   alert("Hubo un error al procesar el archivo");
+               });
+            } else {
+               alert("Ha cancelado la ejecución");
+            }
+
+           };
+
+           actionCell.appendChild(button);
+
+           row.appendChild(nameCell);
+           row.appendChild(noteCell);
+           row.appendChild(actionCell);
+
+           tableBody.appendChild(row);
+
+           table.style.display = "table";
+       } else {
+           alert("Debe seleccionar un archivo antes de almacenar.");
+       }
+   });
+</script> -->
+
+
+
+{% endblock %}

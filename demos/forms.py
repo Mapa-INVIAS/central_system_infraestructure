@@ -1,7 +1,7 @@
 from django import forms
-from .models import sukubunData
+from .models import SukubunData
 
-class sukubunForm(forms.ModelForm):
+class SukubunForm(forms.ModelForm):
     class Meta:
-        model = sukubunData
+        model = SukubunData
         fields = ["file", "note"]

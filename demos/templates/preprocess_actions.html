@@ -1,0 +1,16 @@
+{% extends 'index.html' %}
+
+{% block content %}
+
+<h1>Interface para lanzar proceso</h1>
+<h2>Proceso de Jasmin y Nelson</h2>
+<h3>Enviar procesos de sercios paralelos.</h3>
+
+<div>
+    <form action="{% url 'run_pipeline' %}" method="post">
+        {% csrf_token %}
+        <button type="submit">Enviar proceso</button>
+    </form>
+</div>
+
+{% endblock %}

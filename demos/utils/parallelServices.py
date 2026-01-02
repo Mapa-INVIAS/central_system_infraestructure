@@ -154,7 +154,6 @@ def pipeline_process(output_dir, input_name):
     # ETAPA CALCULO DE DISTANCIA EUCLIDEANA
     # configuracion inicial Rasterizado
     VALOR_FUENTE = 1
-    BLOQUE_ESCALADO = 0
 
     # Ejecución Distancia Euclideana
     CARPETA_RASTER = output_dir / "C_Raster"
@@ -162,7 +161,5 @@ def pipeline_process(output_dir, input_name):
     DistanciaEuclidiana(CARPETA_RASTER,
                         input_name,
                         CARPETA_SALIDA,
-                        VALOR_FUENTE,
-                        BLOQUE_ESCALADO)
-
+                        VALOR_FUENTE)
 

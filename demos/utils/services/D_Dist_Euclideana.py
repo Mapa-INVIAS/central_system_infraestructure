@@ -3,11 +3,13 @@
 import os
 import math
 import warnings
+
 import geopandas as gpd
-from osgeo import gdal, osr
+from osgeo import gdal, ogr, osr
 from tqdm import tqdm
 
-# Silenciar TODO (Python + GDAL)
+# --------------------------------------
+# SILENCIAR WARNINGs
 warnings.filterwarnings("ignore")
 gdal.PushErrorHandler("CPLQuietErrorHandler")
 gdal.UseExceptions()
@@ -16,128 +18,65 @@ gdal.UseExceptions()
 class DistanciaEuclidiana:
 
     def __init__(self,
-                 carpeta_raster,
-                 geojson_referencia,
-                 carpeta_salida,
-                 valor_fuente=1,
-                 bloque_escalado=0):
+                 carpeta_raster: str,
+                 geojson_referencia: str,
+                 carpeta_salida: str,
+                 valor_fuente: int = 1):
 
         self.carpeta_raster = carpeta_raster
         self.geojson_referencia = geojson_referencia
         self.carpeta_salida = carpeta_salida
         self.valor_fuente = int(valor_fuente)
-        self.bloque_escalado = int(bloque_escalado)
 
+        # Crear carpeta de salida
         os.makedirs(self.carpeta_salida, exist_ok=True)
 
-        # Área efectiva
+        # Leer vector de referencia
         self.area = gpd.read_file(self.geojson_referencia)
         if self.area.empty:
             raise RuntimeError("GeoJSON de referencia vacío")
         if self.area.crs is None:
-            raise RuntimeError("GeoJSON de referencia sin CRS")
+            raise RuntimeError("El vector de referencia no tiene CRS")
 
-        # Centroide → factor grados a metros (solo si CRS geográfico)
-        area_wgs84 = self.area.to_crs("EPSG:4326")
-        c = area_wgs84.unary_union.centroid
-        lat = float(c.y)
-        lat_rad = math.radians(lat)
-
-        self.m_por_grado_lat = 111320.0
-        self.m_por_grado_lon = 111320.0 * math.cos(lat_rad)
-
-        # Lista de rasters
-        self.rasters = [os.path.join(self.carpeta_raster, f)
-                        for f in os.listdir(self.carpeta_raster)
-                        if f.lower().endswith(".tif")]
+        # Lista de .tif en la carpeta
+        self.rasters = sorted([
+            os.path.join(self.carpeta_raster, f)
+            for f in os.listdir(self.carpeta_raster)
+            if f.lower().endswith(".tif")
+        ])
         if not self.rasters:
-            raise RuntimeError("No se encontraron rasters .tif")
+            raise RuntimeError("No se encontraron archivos .tif en la carpeta")
 
-        # Ejecutar
+        # Ejecutar procesamiento
         self.ejecutar()
 
     def ejecutar(self):
         for ruta in tqdm(self.rasters,
-                         desc="Distancia euclidiana (GDAL, máscara exacta)",
+                         desc="Distancia euclidiana (GDAL, máscara exacta, NaN real)",
                          unit="raster"):
             self._procesar_uno(ruta)
 
-    # -----------------------------
-    # UTILIDADES CRS
-    def _crs_es_geografico(self, wkt):
+    # =======================================================
+    # UTILIDADES PARA CRS
+    def _crs_es_geografico(self, wkt: str) -> bool:
         sref = osr.SpatialReference()
         sref.ImportFromWkt(wkt)
         return bool(sref.IsGeographic())
 
-    def _crs_es_metrico(self, wkt):
+    def _crs_es_metrico(self, wkt: str) -> bool:
         sref = osr.SpatialReference()
         sref.ImportFromWkt(wkt)
         if sref.IsGeographic():
             return False
         try:
-            u = float(sref.GetLinearUnits() or 0.0)
+            lu = float(sref.GetLinearUnits() or 0.0)
         except Exception:
             return False
-        return 0.9 <= u <= 1.1
+        return 0.9 <= lu <= 1.1
 
-    # -----------------------------
-    # ESCALADO STREAMING (solo distancias)
-    def _escalar_raster(self, in_path, out_path, factor, nodata_val=-9999.0):
-
-        ds = gdal.Open(in_path, gdal.GA_ReadOnly)
-        if ds is None:
-            raise RuntimeError(f"No se pudo abrir para escalado: {in_path}")
-
-        band = ds.GetRasterBand(1)
-        xsize, ysize = ds.RasterXSize, ds.RasterYSize
-
-        bx, by = band.GetBlockSize()
-        if self.bloque_escalado > 0:
-            bx = by = self.bloque_escalado
-        if bx <= 0 or by <= 0:
-            bx = by = 1024
-
-        drv = gdal.GetDriverByName("GTiff")
-        out = drv.Create(out_path,
-                         xsize,
-                         ysize,
-                         1,
-                         gdal.GDT_Float32,
-                         options=["TILED=YES", "COMPRESS=LZW", "SPARSE_OK=YES", "BIGTIFF=YES"])
-        out.SetGeoTransform(ds.GetGeoTransform())
-        out.SetProjection(ds.GetProjection())
-
-        out_band = out.GetRasterBand(1)
-        out_band.SetNoDataValue(float(nodata_val))
-
-        in_nodata = band.GetNoDataValue()
-        if in_nodata is None:
-            in_nodata = nodata_val
-
-        for y in range(0, ysize, by):
-            h = min(by, ysize - y)
-            for x in range(0, xsize, bx):
-                w = min(bx, xsize - x)
-                arr = band.ReadAsArray(x, y, w, h)
-                if arr is None:
-                    continue
-
-                arr = arr.astype("float32", copy=False)
-
-                # preservar nodata
-                m_nodata = (arr == float(in_nodata))
-                arr = arr * float(factor)
-                arr[m_nodata] = float(nodata_val)
-
-                out_band.WriteArray(arr, x, y)
-
-        out.FlushCache()
-        out = None
-        ds = None
-
-    # -----------------------------
+    # =======================================================
     # PROCESAR UN RASTER
-    def _procesar_uno(self, ruta_raster):
+    def _procesar_uno(self, ruta_raster: str):
 
         nombre = os.path.splitext(os.path.basename(ruta_raster))[0]
         out_raster = os.path.join(self.carpeta_salida, f"dist_{nombre}.tif")
@@ -146,157 +85,116 @@ class DistanciaEuclidiana:
         tmp_mask = os.path.join(self.carpeta_salida, f"_tmp_mask_{nombre}.tif")
         tmp_bin  = os.path.join(self.carpeta_salida, f"_tmp_bin_{nombre}.tif")
         tmp_prox = os.path.join(self.carpeta_salida, f"_tmp_prox_{nombre}.tif")
-        tmp_m    = os.path.join(self.carpeta_salida, f"_tmp_m_{nombre}.tif")
-        tmp_out0 = os.path.join(self.carpeta_salida, f"_tmp_out0_{nombre}.tif")
+        tmp_out  = os.path.join(self.carpeta_salida, f"_tmp_out_{nombre}.tif")
         cutline  = os.path.join(self.carpeta_salida, f"_tmp_area_{nombre}.gpkg")
 
-        NODATA = -9999.0
+        NODATA_INT = -9999.0
+        NODATA_OUT = float("nan")
 
-        src = gdal.Open(ruta_raster, gdal.GA_ReadOnly)
-        if src is None:
-            raise RuntimeError(f"No se pudo abrir raster: {ruta_raster}")
+        # Abrir raster
+        ds = gdal.Open(ruta_raster, gdal.GA_ReadOnly)
+        if ds is None:
+            raise RuntimeError(f"No se pudo abrir: {ruta_raster}")
 
-        src_wkt = src.GetProjection()
+        src_wkt = ds.GetProjection()
         if not src_wkt:
+            ds = None
             raise RuntimeError(f"Raster sin proyección: {ruta_raster}")
 
-        # Área al CRS del raster
+        # Exportar área al CRS del raster
         self.area.to_crs(src_wkt).to_file(cutline,
                                           driver="GPKG",
                                           layer="area",
                                           index=False)
 
-        # ---------------------------------------------------------
-        # 1) CLIP A EXTENSIÓN DEL ÁREA (rápido, reduce trabajo)
-        #    (aquí sí ponemos NoData para que afuera del recorte quede vacío real)
-        # ---------------------------------------------------------
+        # ------------------------------------------------------
+        # 1) Clip al área
         gdal.Warp(tmp_clip,
-                  src,
+                  ds,
                   cutlineDSName=cutline,
                   cutlineLayer="area",
                   cropToCutline=True,
-                  dstNodata=NODATA,
+                  dstNodata=NODATA_INT,
                   multithread=True,
                   creationOptions=["TILED=YES",
                                    "COMPRESS=LZW",
                                    "SPARSE_OK=YES",
                                    "BIGTIFF=YES"])
-        src = None
+        ds = None
 
-        clip = gdal.Open(tmp_clip, gdal.GA_ReadOnly)
-        if clip is None:
-            raise RuntimeError(f"No se pudo abrir temporal clip: {tmp_clip}")
-
-        # ---------------------------------------------------------
-        # 2) MÁSCARA EXACTA DEL POLÍGONO (1 dentro, 0 fuera)
-        #    IMPORTANTÍSIMO: esto evita cálculo/valores fuera del área real
-        # ---------------------------------------------------------
-        gdal.Warp(tmp_mask,
-                  tmp_clip,
-                  cutlineDSName=cutline,
-                  cutlineLayer="area",
-                  cropToCutline=True,
-                  dstNodata=0,
-                  multithread=True,
-                  creationOptions=["TILED=YES",
-                                   "COMPRESS=LZW",
-                                   "SPARSE_OK=YES",
-                                   "BIGTIFF=YES"],
-                  # rasterizar polígono como máscara
-                  warpOptions=["CUTLINE_ALL_TOUCHED=FALSE"],
-                  )
-
-        # OJO: el Warp anterior no garantiza máscara 1/0 si el raster tiene datos,
-        # así que hacemos máscara real con Rasterize (sobre el grid del clip):
-        # Creamos tmp_mask como byte y rasterizamos el polígono encima del grid.
+        # ------------------------------------------------------
+        # 2) Crear máscara exacta
+        ref = gdal.Open(tmp_clip, gdal.GA_ReadOnly)
+        xsize, ysize = ref.RasterXSize, ref.RasterYSize
+        gt = ref.GetGeoTransform()
+        prj = ref.GetProjection()
+        ref = None
 
         drv = gdal.GetDriverByName("GTiff")
-        mask_ds = drv.Create(tmp_mask,
-                             clip.RasterXSize,
-                             clip.RasterYSize,
-                             1,
+        mask_ds = drv.Create(tmp_mask, xsize, ysize, 1,
                              gdal.GDT_Byte,
-                             options=["TILED=YES", "COMPRESS=LZW", "SPARSE_OK=YES", "BIGTIFF=YES"])
-        mask_ds.SetGeoTransform(clip.GetGeoTransform())
-        mask_ds.SetProjection(clip.GetProjection())
+                             options=["TILED=YES",
+                                      "COMPRESS=LZW",
+                                      "SPARSE_OK=YES",
+                                      "BIGTIFF=YES"])
+        mask_ds.SetGeoTransform(gt)
+        mask_ds.SetProjection(prj)
+
         mb = mask_ds.GetRasterBand(1)
         mb.SetNoDataValue(0)
         mb.Fill(0)
 
-        # Rasterizar polígono (burn=1)
-        err = gdal.Rasterize(mask_ds, cutline, layers=["area"], burnValues=[1])
-        if err != 0:
-            mask_ds = None
-            clip = None
-            raise RuntimeError("No se pudo rasterizar la máscara del área")
-
+        vds = ogr.Open(cutline)
+        lyr = vds.GetLayerByName("area")
+        gdal.RasterizeLayer(mask_ds, [1], lyr, burn_values=[1])
         mask_ds.FlushCache()
         mask_ds = None
+        vds = None
 
-        # ---------------------------------------------------------
-        # 3) BINARIO SOLO DENTRO DEL ÁREA (fuera = 0)
-        # ---------------------------------------------------------
+        # ------------------------------------------------------
+        # 3) Binario de fuente dentro del área
+        clip = gdal.Open(tmp_clip, gdal.GA_ReadOnly)
         mask_open = gdal.Open(tmp_mask, gdal.GA_ReadOnly)
-        if mask_open is None:
-            clip = None
-            raise RuntimeError(f"No se pudo abrir máscara: {tmp_mask}")
-
         arr = clip.GetRasterBand(1).ReadAsArray()
         msk = mask_open.GetRasterBand(1).ReadAsArray()
-
-        if arr is None or msk is None:
-            clip = None
-            mask_open = None
-            raise RuntimeError("No se pudo leer arrays de clip/máscara")
+        clip = None
+        mask_open = None
 
         bin_ds = drv.Create(tmp_bin,
-                            clip.RasterXSize,
-                            clip.RasterYSize,
-                            1,
+                            xsize, ysize, 1,
                             gdal.GDT_Byte,
                             options=["TILED=YES",
                                      "COMPRESS=LZW",
                                      "SPARSE_OK=YES",
                                      "BIGTIFF=YES"])
-        bin_ds.SetGeoTransform(clip.GetGeoTransform())
-        bin_ds.SetProjection(clip.GetProjection())
+        
+        bin_ds.SetGeoTransform(gt)
+        bin_ds.SetProjection(prj)
         bb = bin_ds.GetRasterBand(1)
         bb.SetNoDataValue(0)
-
-        # (arr == valor_fuente) dentro del área; fuera = 0
-        bin_arr = ((arr == self.valor_fuente) & (msk == 1)).astype("uint8")
-        bb.WriteArray(bin_arr)
+        bb.Fill(0)
+        bb.WriteArray(((arr == self.valor_fuente) & (msk == 1)).astype("uint8"))
         bin_ds.FlushCache()
         bin_ds = None
-        clip = None
-        mask_open = None
 
-        # ---------------------------------------------------------
-        # 4) PROXIMITY SOBRE EL RECORTE (NO se calcula afuera del recorte)
-        #    y luego aplicamos máscara para que fuera del polígono quede NODATA real.
-        # ---------------------------------------------------------
+        # ------------------------------------------------------
+        # 4) Calcular proximidad (distancia euclidiana)
         bin_open = gdal.Open(tmp_bin, gdal.GA_ReadOnly)
-        if bin_open is None:
-            raise RuntimeError(f"No se pudo abrir temporal binario: {tmp_bin}")
-
-        is_geo = self._crs_es_geografico(src_wkt)
-        is_m = self._crs_es_metrico(src_wkt)
-
-        prox_ds = drv.Create(tmp_prox,
-                             bin_open.RasterXSize,
-                             bin_open.RasterYSize,
-                             1,
-                             gdal.GDT_Float32,
+        prox_ds = drv.Create(tmp_prox, xsize, ysize, 1, gdal.GDT_Float32,
                              options=["TILED=YES",
                                       "COMPRESS=LZW",
                                       "SPARSE_OK=YES",
                                       "BIGTIFF=YES"])
-        prox_ds.SetGeoTransform(bin_open.GetGeoTransform())
-        prox_ds.SetProjection(bin_open.GetProjection())
+        
+        prox_ds.SetGeoTransform(gt)
+        prox_ds.SetProjection(prj)
         pb = prox_ds.GetRasterBand(1)
-        pb.SetNoDataValue(float(NODATA))
-        pb.Fill(float(NODATA))
+        pb.SetNoDataValue(NODATA_INT)
 
+        is_geo = self._crs_es_geografico(src_wkt)
+        is_m  = self._crs_es_metrico(src_wkt)
+
+        # DISTUNITS=GEO produce distancia euclidiana en unidades del CRS cuando es métrico :contentReference[oaicite:1]{index=1}
         gdal.ComputeProximity(bin_open.GetRasterBand(1),
                               pb,
                               options=["VALUES=1",
@@ -305,47 +203,23 @@ class DistanciaEuclidiana:
         prox_ds = None
         bin_open = None
 
-        # ---------------------------------------------------------
-        # 5) Escalar a metros si CRS geográfico
-        # ---------------------------------------------------------
-        if is_geo and not is_m:
-            prox_tmp = gdal.Open(tmp_prox, gdal.GA_ReadOnly)
-            gt = prox_tmp.GetGeoTransform()
-            prox_tmp = None
-
-            px_m = math.sqrt((abs(gt[1]) * self.m_por_grado_lon) ** 2 +
-                             (abs(gt[5]) * self.m_por_grado_lat) ** 2) / math.sqrt(2)
-
-            self._escalar_raster(tmp_prox, tmp_m, px_m, nodata_val=NODATA)
-            dist_in = tmp_m
-        else:
-            dist_in = tmp_prox
-
-        # ---------------------------------------------------------
-        # 6) APLICAR MÁSCARA AL RESULTADO FINAL:
-        #    fuera del área = NODATA (vacío real, no cero, no relleno)
-        # ---------------------------------------------------------
-        dist_ds = gdal.Open(dist_in, gdal.GA_ReadOnly)
+        # ------------------------------------------------------
+        # 5) Aplicar máscara y generar raster final con NaN fuera
+        dist_ds = gdal.Open(tmp_prox, gdal.GA_ReadOnly)
         mask_ds = gdal.Open(tmp_mask, gdal.GA_ReadOnly)
 
-        if dist_ds is None or mask_ds is None:
-            raise RuntimeError("No se pudo abrir dist/mask para enmascarar")
-
-        xsize, ysize = dist_ds.RasterXSize, dist_ds.RasterYSize
-        out0 = drv.Create(tmp_out0,
-                          xsize,
-                          ysize,
-                          1,
+        out0 = drv.Create(tmp_out,
+                          xsize, ysize, 1,
                           gdal.GDT_Float32,
                           options=["TILED=YES",
                                    "COMPRESS=LZW",
                                    "SPARSE_OK=YES",
                                    "BIGTIFF=YES"])
-        out0.SetGeoTransform(dist_ds.GetGeoTransform())
-        out0.SetProjection(dist_ds.GetProjection())
+        
+        out0.SetGeoTransform(gt)
+        out0.SetProjection(prj)
         ob = out0.GetRasterBand(1)
-        ob.SetNoDataValue(float(NODATA))
-        ob.Fill(float(NODATA))
+        ob.SetNoDataValue(NODATA_OUT)
 
         db = dist_ds.GetRasterBand(1)
         mb = mask_ds.GetRasterBand(1)
@@ -355,43 +229,30 @@ class DistanciaEuclidiana:
             bx = by = 1024
 
         for y in range(0, ysize, by):
-            h = min(by, ysize - y)
             for x in range(0, xsize, bx):
                 w = min(bx, xsize - x)
-
-                darr = db.ReadAsArray(x, y, w, h)
+                h = min(by, ysize - y)
                 marr = mb.ReadAsArray(x, y, w, h)
-
-                if darr is None or marr is None:
-                    continue
-
-                darr = darr.astype("float32", copy=False)
-                out_arr = darr
-                out_arr[marr != 1] = float(NODATA)
-
-                ob.WriteArray(out_arr, x, y)
+                darr = db.ReadAsArray(x, y, w, h).astype("float32")
+                darr[marr != 1] = NODATA_OUT
+                ob.WriteArray(darr, x, y)
 
         out0.FlushCache()
         out0 = None
         dist_ds = None
         mask_ds = None
 
-        # ---------------------------------------------------------
-        # 7) Guardar FINAL (ya está recortado y enmascarado)
-        # ---------------------------------------------------------
-        # Copia directa (evita un Warp extra)
-        gdal.Translate(out_raster,
-                       tmp_out0,
+        # ------------------------------------------------------
+        # GUARDAR RESULTADO
+        gdal.Translate(out_raster, tmp_out,
                        creationOptions=["TILED=YES",
                                         "COMPRESS=LZW",
                                         "SPARSE_OK=YES",
                                         "BIGTIFF=YES"])
-
-        # Limpieza
-        for p in (tmp_clip, tmp_mask, tmp_bin, tmp_prox, tmp_m, tmp_out0, cutline):
+        # LIMPIEZA
+        for p in (tmp_clip, tmp_mask, tmp_bin, tmp_prox, tmp_out, cutline):
             try:
                 if os.path.exists(p):
                     os.remove(p)
             except Exception:
                 pass
-

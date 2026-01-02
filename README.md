@@ -98,7 +98,7 @@ flowchart TD
 - conda list --export > requirements.txt
 - Ejecutar el [[make_yml.py])(https://github.com/Mapa-INVIAS/central_system_infraestructure/blob/main/make_yml.py)] <!-- Código para generación del environment.yml -->
 - conda env export > environment.yml <!-- Exporta la configuración del entorno -->
-- python make_yml.py requirements.txt environment.yml r_env <!-- Modo de ejecución código make_yml.py | r_env es el entorno -->
+- python make_yml.py requirements.txt environment.yml r_env <!-- Modo de ejecución código make_yml.py | r_env es el entorno utf-8 Latino / utf-16 Anglo -->
 - conda env create -f environment.yml
 - conda env update -f environment.yml <!-- Instalación de paquetes faltantes y actualización de versiones distintintas -->
 ### Ideal

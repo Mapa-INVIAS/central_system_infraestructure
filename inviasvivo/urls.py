@@ -25,7 +25,7 @@ urlpatterns = [
     path('', include('frontend.urls')),
     path('demos/', include('demos.urls')),
     # Nuevo enlace
-    path('clase/', include('clase.urls'))
+    # path('clase/', include('clase.urls')),
 ]
 
 # import os

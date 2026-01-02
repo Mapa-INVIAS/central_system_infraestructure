@@ -1,6 +1,6 @@
 import time, os, schedule, json, rasterio, traceback, ee, geemap, requests, json, uuid
 from django.shortcuts import render, redirect
-from django.http import JsonResponse, FileResponse, HttpResponseNotAllowed
+from django.http import JsonResponse, FileResponse, HttpResponseNotAllowed, StreamingHttpResponse
 from django.http import HttpResponse
 from django.conf import settings
 from google.cloud import storage
@@ -8,16 +8,81 @@ from google.cloud.storage import transfer_manager
 from rasterio.features import shapes
 from django.views.decorators.csrf import csrf_exempt
 from .utils.maxentModel02 import MaxEntWorkflow  # importa tu clase
-from .utils.downloadInputsMaxent import download_latest_exports
+from .utils.gee.downloadInputsMaxent import download_latest_exports
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
 
-from .forms import sukubunForm
+from .forms import SukubunForm
+from django.urls import reverse
+# from telegram.ext import *
+# import telegram
+# from django.core.serializers.json import DjangoJSONEncoder
+# from django.core.serializers import serialize
+
+ULR = settings.BOT_URL
+TOKEN = settings.BOT_TOKEN
+CHAT_ID = settings.BOT_CHAT_ID
+
+def send_telegram_message(msg):
+    # Aquí tu implementación real de envío a Telegram
+    print("Telegram:", msg)
+
+def monitor_django(url="http://127.0.0.1:8000", interval=60):
+    while True:
+        try:
+            r = requests.get(url, timeout=10)
+            if r.status_code == 200:
+                print("Django OK")
+            else:
+                send_telegram_message(f"⚠️ Django respondió con código {r.status_code}")
+        except requests.exceptions.RequestException:
+            send_telegram_message("❌ Django no responde (posible caída)")
+        time.sleep(interval)
+
+if __name__ == "__main__":
+    monitor_django()
+
+
+# core/telegram_utils.py
+def send_telegram_message(text, chat_id=None):
+    token = TOKEN
+    chat_id = CHAT_ID
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    payload = {"chat_id": chat_id, "text": text}
+    response = requests.post(url, data=payload)
+    return response.json()
+
+
+def vector_dividido():
+    # Generar lista de números del 1 al 100
+    numeros = list(range(1, 1000))
+    time.sleep(15)
+    # Dividir cada número entre 5
+    resultado = [n / 5 for n in numeros]
+    return resultado
+
+
+def proceso_largo():
+    # Simulación de un proceso que tarda
+    # time.sleep(5)
+    vector_dividido()
+    resultado = "Proceso terminado con éxito ✅"
+    # Notificar al finalizar
+    mensaje = f"La función proceso_largo finalizó: {resultado}\n\n[Enlace para continuar con el proceso](https://http://127.0.0.1:8000/demos/ejecutar/)" 
+    send_telegram_message(mensaje)
+    return resultado
+
+
+def ejecutar_proceso(request):
+    resultado = proceso_largo()
+    return HttpResponse(f"Resultado: {resultado}")
+
 
 #================================================#
 #                                                #
 ##            CENTRAL PROCESS SYSTEM            ##
 #                                                #
 #================================================#
+
 
 import numpy as np
 import pandas as pd
@@ -28,11 +93,14 @@ from io import BytesIO
 from pathlib import Path
 from collections import defaultdict
 
+
 ## ========  Sample external data ======== ##
+
 
 from geodatasets import get_path
 import rasterio.features
 import rasterio.warp
+
 
 # ========================================= #
 # Current conditions within the target bucket
@@ -40,51 +108,50 @@ import rasterio.warp
 
 # This function scans the bucket and detects updates
 
-def build_tree(blobs):
-    tree = {}
-    for blob in blobs:
-        parts = blob.name.split("/")
-        node = tree
-        for part in parts[:-1]: 
-            node = node.setdefault(part, {})
-        node.setdefault("_files", []).append((parts[-1], blob))
-    return tree
+# def build_tree(blobs):
+#     tree = {}
+#     for blob in blobs:
+#         parts = blob.name.split("/")
+#         node = tree
+#         for part in parts[:-1]: 
+#             node = node.setdefault(part, {})
+#         node.setdefault("_files", []).append((parts[-1], blob))
+#     return tree
 
-# 
-def print_tree(node, indent=0):
-    for key, value in sorted(node.items()):
-        if key == "_files":
-            for file, blob in sorted(value, key=lambda x: x[1].updated, reverse=True):
-                print(" " * indent + f"||--** {file} || Date: {blob.updated}")
-        else:
-            print(" " * indent + f"|-* {key}")
-            print_tree(value, indent + 4)
+# # 
+# def print_tree(node, indent=0):
+#     for key, value in sorted(node.items()):
+#         if key == "_files":
+#             for file, blob in sorted(value, key=lambda x: x[1].updated, reverse=True):
+#                 print(" " * indent + f"||--** {file} || Date: {blob.updated}")
+#         else:
+#             print(" " * indent + f"|-* {key}")
+#             print_tree(value, indent + 4)
 
+# # Función de scanner
+# def list_blobs(bucket_name):
+#     # global contador
+#     # contador += 1
 
-# Función de scanner
-def list_blobs(bucket_name):
-    # global contador
-    # contador += 1
+#     """Lista blobs agrupados en árbol dinámico."""
+#     storage_client = storage.Client()
+#     blobs = storage_client.list_blobs(bucket_name)
 
-    """Lista blobs agrupados en árbol dinámico."""
-    storage_client = storage.Client()
-    blobs = storage_client.list_blobs(bucket_name)
+#     tree = build_tree(blobs)
+#     print_tree(tree)
+#     # print(f'Ejecución número  {contador}')
 
-    tree = build_tree(blobs)
-    print_tree(tree)
-    # print(f'Ejecución número  {contador}')
+# bucket_name = "invias_mapa_vulnerabilidad_faunistica"
 
-bucket_name = "invias_mapa_vulnerabilidad_faunistica"
+# # schedule.every(1).minutes.do(list_blobs, bucket_name)
+# # contador = 0
 
-# schedule.every(1).minutes.do(list_blobs, bucket_name)
-# contador = 0
+# # print('Activando programador de tareas')
+# # while True:
+# #     schedule.run_pending()
+# #     time.sleep(1)
 
-# print('Activando programador de tareas')
-# while True:
-#     schedule.run_pending()
-#     time.sleep(1)
-
-# list_blobs(bucket_name)
+# # list_blobs(bucket_name)
 
 
 ###############################################################################################################################
@@ -94,51 +161,136 @@ bucket_name = "invias_mapa_vulnerabilidad_faunistica"
 #
 # =========================================================================================================================== #
 ###############################################################################################################################
-
+def inputs_gee(request):
+    return render(request, 'inputs_gee.html')
 
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
-from .utils.ee_init import init_ee
-from .utils.exportTiles import run_s2_export
+from .utils.googleServices import gee_pipeline
 
-
-@csrf_exempt
-@require_POST
-def run_s2(request):
+def run_gee_pipeline(request):
     try:
-        init_ee()   
 
-        body = json.loads(request.body.decode()) if request.body else {}
+        try:
+            body = json.loads(request.body.decode())
+        except json.JSONDecodeError:
+            body = {}
 
-        result = run_s2_export(
-            limit_zones=body.get("limit_zones"),
-            dry_run_tiles=body.get("dry_run_tiles")
-        )
+        results = gee_pipeline(body)
 
-        return JsonResponse(result, status=200)
-
+        return JsonResponse({"status": "ok", "steps": results}, status=200)
     except Exception as e:
-        return JsonResponse(
-            {
-                "status": "error",
-                "detail": str(e),
-                "hint": "Verifique permisos del Service Account en IAM"
-            },
-            status=500
-        )
+        return JsonResponse({"status": "error", "detail": str(e)}, status=500)
+
+
+# from .utils.gee.exportTiles import run_s2_export
+# @csrf_exempt
+
+# @require_POST
+# def run_s2(request):
+#     try:
+#         init_ee()   
+
+#         body = json.loads(request.body.decode()) if request.body else {}
+
+#         result = run_s2_export(
+#             limit_zones=body.get("limit_zones"),
+#             dry_run_tiles=body.get("dry_run_tiles")
+#         )
+
+#         return JsonResponse(result, status=200)
+
+#     except Exception as e:
+#         return JsonResponse(
+#             {
+#                 "status": "error",
+#                 "detail": str(e),
+#                 "hint": "Verifique permisos del Service Account en IAM"
+#             },
+#             status=500
+#         )
+
+# def run_s2(request):
+#     try:
+#         print("Iniciando ejecución de run_s2...")  # mensaje en consola
+#         init_ee()
+#         print("Earth Engine inicializado correctamente.")
+
+#         body = json.loads(request.body.decode()) if request.body else {}
+#         print("Body recibido:", body)
+
+#         result = run_s2_export(
+#             limit_zones=body.get("limit_zones"),
+#             dry_run_tiles=body.get("dry_run_tiles")
+#         )
+#         print("Exportación finalizada.")
+
+#         return JsonResponse(
+#             {"status": "ok", "message": "Proceso completado", "result": result},
+#             status=200
+#         )
+#     except Exception as e:
+#         print("Error durante la ejecución:", str(e))
+#         return JsonResponse(
+#             {"status": "error", "detail": str(e)},
+#             status=500
+#         )
+
+
+# def run_s2(request):
+#     def generator():
+#         yield "Iniciando...\n"
+#         init_ee()
+#         yield "Earth Engine inicializado...\n"
+#         body = json.loads(request.body.decode()) if request.body else {}
+#         yield f"Body recibido: {body}\n"
+#         result = run_s2_export(
+#             limit_zones=body.get("limit_zones"),
+#             dry_run_tiles=body.get("dry_run_tiles")
+#         )
+#         yield "Proceso completado.\n"
+#         yield f"Resultado: {result}\n"
+
+#     return StreamingHttpResponse(generator(), content_type="text/plain")
+
+
+# def run_s2(request):
+#     try:
+#         init_ee()
+
+#         try:
+#             body = json.loads(request.body.decode())
+#         except json.JSONDecodeError:
+#             body = {}
+
+#         result = run_s2_export(
+#             limit_zones=body.get("limit_zones"),
+#             dry_run_tiles=body.get("dry_run_tiles")
+#         )
+
+#         return JsonResponse({"status": "ok", "result": result}, status=200)
+
+#     except Exception as e:
+#         return JsonResponse(
+#             {"status": "error", "detail": str(e)},
+#             status=500
+#         )
+
 
 
 ########################################################################
 ########################################################################
 # Descarga GCS ultimo
-
-def download_exports(request):
-    try:
-        result = download_latest_exports()
-        return JsonResponse({"status": "ok", "result": result})
-    except Exception as e:
-        return JsonResponse({"status": "error", "message": str(e)}, status=500)
+# @csrf_exempt
+# @require_POST
+# def download_exports(request):
+#     # if request.method == "POST":
+#     try:
+#         result = download_latest_exports()
+#         return JsonResponse({"status": "ok", "result": result})
+#     except Exception as e:
+#         return JsonResponse({"status": "error", "message": str(e)}, status=500)
 
 ########################################################################
 ########################################################################
@@ -174,64 +326,24 @@ def download_exports(request):
 #     })
 
 
-from .utils.makeMosaicInputs import full_mosaic_nacional
+# from .utils.gee.makeMosaicInputs import full_mosaic_nacional
 
-@csrf_exempt
-@require_POST
-def run_mosaic_nacional_view(request):
-    payload = json.loads(request.body or "{}")
+# @csrf_exempt
+# @require_POST
+# def run_mosaic_nacional_view(request):
+#     payload = json.loads(request.body or "{}")
 
-    exports_dir = Path(settings.MEDIA_ROOT) / "EXPORTS"
+#     exports_dir = Path(settings.MEDIA_ROOT) / "EXPORTS"
 
-    results = full_mosaic_nacional(
-        exports_dir=exports_dir,
-        run_s2=payload.get("run_s2", True),
-        run_hansen=payload.get("run_hansen", True),
-        run_srtm=payload.get("run_srtm", True),
-    )
+#     results = full_mosaic_nacional(
+#         exports_dir=exports_dir,
+#         run_s2=payload.get("run_s2", True),
+#         run_hansen=payload.get("run_hansen", True),
+#         run_srtm=payload.get("run_srtm", True),
+#     )
 
-    return JsonResponse({"status": "ok", "outputs": results})
+#     return JsonResponse({"status": "ok", "outputs": results})
 
-
-
-########################################################################
-########################################################################
-
-# Complete download of bucket data
-def download_bucket_with_transfer_manager(
-    bucket_name, workers=8, max_results=None, prefix=None):
-
-    storage_client = storage.Client()
-    bucket = storage_client.bucket(bucket_name)
-
-    blobs = bucket.list_blobs(max_results=max_results, prefix=prefix)
-    blob_names = [blob.name for blob in blobs]
-
-    # destination_directory = settings.MEDIA_ROOT
-
-    destination_directory = os.path.join(settings.MEDIA_ROOT, 'preprocess')
-    os.makedirs(destination_directory, exist_ok=True)
-
-    results = transfer_manager.download_many_to_path(
-        bucket,
-        blob_names,
-        destination_directory=destination_directory,
-        max_workers=workers,
-    )
-
-    for name, result in zip(blob_names, results):
-        if isinstance(result, Exception):
-            print(f"x Error al descargar {name}: {result}")
-        else:
-            ruta_final = os.path.join(destination_directory, name)
-            print(f"✓ Descargado {name} -> {ruta_final}")
-
-    print("🎉 Todos los archivos descargados con éxito")
-
-
-print('si esta corriendo') 
-# download_bucket_with_transfer_manager("invias")
-# download_bucket_with_transfer_manager("invias_mapa_vulnerabilidad_faunistica")
 
 
 ########################################################################
@@ -244,6 +356,47 @@ from pathlib import Path
 from django.conf import settings
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.core.files.storage import FileSystemStorage
+
+from django.contrib.auth import authenticate, login
+from django.shortcuts import render, redirect
+
+# login user
+def sk_login(request):
+    if request.method == "POST":
+        username = request.POST['username']
+        password = request.POST['password']
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            login(request, user)
+            return redirect('/demos/user/inputs_gee')
+        else:
+            return render(request, 'login.html', {'error': 'Credenciales inválidas'})
+    return render(request, "login.html")
+
+# Sukubun database
+def dbSukubun(request):
+    if request.method == "POST":
+        form = SukubunForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            return redirect('db_sukubun')
+    else:
+        form = SukubunForm()
+    return render(request, "sukubun.html", {"form": form})
+
+
+def safe_send_telegram(message: str):
+    try:
+        send_telegram_message(message)
+    except requests.exceptions.ConnectionError:
+        # Error específico de conexión
+        print("Error: conexión interrumpida al enviar mensaje a Telegram.")
+        return False
+    except Exception as e:
+        print(f"Error inesperado al enviar mensaje a Telegram: {e}")
+        return False
+    return True
 
 @csrf_exempt
 def run_pipeline(request):
@@ -253,15 +406,48 @@ def run_pipeline(request):
     output_dir = Path(settings.MEDIA_ROOT) / "AutoINVIAS"
 
     if not input_name.exists():
+        
+        safe_send_telegram( 
+            f"❌ Error: No se encontró el archivo\n\n {input_name}" 
+        )
+
         return JsonResponse(
             {"status": "error", "message": f"No se encontró {input_name}"}, status=404
         )
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    # ============================================== #
+    #                 Notificación                   #
+    # ============================================== #
+
+    link = reverse("preprocess_actions")
+    domain = "http://127.0.0.1:8000"
+    full_url = f"{domain}{link}"
+
     try:
         pipeline_process(output_dir, input_name)
+
+        message = (
+            f"Los servicios paralelos han culminado.\n\n"
+            f"Se ha generado el jacknife. \n\n"
+            f"De forma exitosa. \n\n"
+            f"Continue el proceso en ({full_url})"
+        )
+
+        safe_send_telegram(message)
+
     except Exception as e:
+
+        error_message = (
+            f"❌ El proceso pipeline falló.\n\n"
+            f"Intente enviarlo nuevamente.\n\n"
+            f"Si falla nuevamente notifique al personal técnico. \n\n"
+            f"Error: {str(e)}"
+        )
+
+        safe_send_telegram(error_message)
+
         return JsonResponse(
             {"status": "error", "message": str(e)}, status=500
         )
@@ -269,7 +455,6 @@ def run_pipeline(request):
     return JsonResponse(
         {"status": "ok", "message": "Pipeline ejecutado"}
     )
-
 
 
 # ==================================================================== #
@@ -460,20 +645,20 @@ def distances_way(request):
     return data_url
     
 # ================================================================== #
-# login user
-def sk_login(request):
-    return render(request, "login.html")
+# # login user
+# def sk_login(request):
+#     return render(request, "login.html")
 
-# Sukubun database
-def dbSukubun(request):
-    if request.method == "POST":
-        form = sukubunForm(request.POST, request.FILES)
-        if form.is_valid():
-            form.save()
-            return redirect('db_sukubun')
-    else:
-        form = sukubunForm()
-    return render(request, "sukubun.html", {"form": form})
+# # Sukubun database
+# def dbSukubun(request):
+#     if request.method == "POST":
+#         form = SukubunForm(request.POST, request.FILES)
+#         if form.is_valid():
+#             form.save()
+#             return redirect('db_sukubun')
+#     else:
+#         form = SukubunForm()
+#     return render(request, "sukubun.html", {"form": form})
 
 
 # ===================================================================== #
@@ -681,16 +866,17 @@ except ImportError:
 from rpy2.robjects import default_converter
 from rpy2.robjects.conversion import localconverter
 
-@csrf_exempt
-def demo_maxent(request):
+# @csrf_exempt
+@require_POST
+def model_maxent(request):
     """
     Ejecuta MaxEnt para todas las regiones encontradas en MEDIA_ROOT/jackknife.
     Cada carpeta = una región = una corrida de MaxEnt.
-    Uso: GET /demos/maxent/run_safe/
+    Uso: POST /demos/maxent/run_safe/
     """
 
-    if request.method != "GET":
-        return HttpResponseNotAllowed(["GET"])
+    if request.method != "POST":
+        return HttpResponseNotAllowed(["POST"])
 
     try:
         jackknife_root = os.path.join(settings.MEDIA_ROOT, "jacknife")
@@ -726,7 +912,31 @@ def demo_maxent(request):
                     workflow.run()
                 resultados[region] = "OK"
             except Exception as e:
+
+                error_message = (
+                    f"❌ Fallo el proceso de Maxent model. \n\n"
+                    f"Error: {str(e)}"
+                )
+
+                send_telegram_message(error_message)
+
                 resultados[region] = f"ERROR: {str(e)}"
+
+        # ------------------------------- # 
+        #          Notificación           # 
+        # ------------------------------- #
+
+        enlace = reverse("ejecutar_proceso")
+        dominio = "http://127.0.0.1:8000"
+        url_completa = f"{dominio}{enlace}"
+
+        mensaje = ( 
+            f"El proceso MaxEnt finalizó.\n\n" 
+            f"Regiones procesadas: {', '.join(regiones)}\n" 
+            f"Resultados: {resultados}\n\n" 
+            f"Dirijase a descargar los resultados en ({url_completa})" )
+        
+        send_telegram_message(mensaje, parse_mode="Markdown")
 
         return JsonResponse({
             "status": "ok",
@@ -781,3 +991,21 @@ def tiff_geo(request, project_name):
     
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+
+# ==================================================================== #
+########################################################################
+# User Visual interfaces
+
+
+
+def preprocess_actions(request):
+    return render(request, 'preprocess_actions.html')
+
+def process_actions(request):
+    return render(request, 'process_actions.html')
+
+def posprocess_actions(request):
+    return render(request, 'new_map.html')
+    # return HttpResponse("El boton envio la notificación")
+    

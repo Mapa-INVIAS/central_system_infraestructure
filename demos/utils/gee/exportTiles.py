@@ -6,6 +6,8 @@ import time
 import datetime as dt
 from pathlib import Path
 from typing import List, Dict, Tuple, Optional
+from tqdm import tqdm
+
 
 import ee
 import geemap
@@ -66,7 +68,7 @@ TILE_SIZE_KM   = 50      # lado de la tesela inicial por zona
 OVERLAP_KM     = 0       # buffer opcional del tile bbox (en km)
 
 # Control
-MAX_CONCURRENT = 3       # tasks GEE simultáneas
+MAX_CONCURRENT = 4       # tasks GEE simultáneas
 PAUSE_BETWEEN  = 0.2     # segundos entre task.start()
 
 # Subdivisión recursiva
@@ -270,7 +272,7 @@ def run_s2_export(limit_zones=None, dry_run_tiles=None):
 
     processed = submitted = 0
 
-    for z in zones:
+    for z in tqdm(zones, desc="Procesando zonas", unit="zona"):
         aoi = gdf_to_ee_aoi(z["gdf"])
         s2 = ensure_default_projection(build_s2_mosaic(aoi, start, end), CRS_EXPORT, SCALE_EXPORT_M)
         tiles = tiles_from_zone(z["union"], TILE_SIZE_KM, OVERLAP_KM)
@@ -278,8 +280,9 @@ def run_s2_export(limit_zones=None, dry_run_tiles=None):
         count = 0
         stack = [(t[0], *t[1:], 0) for t in tiles]
 
-        while stack:
-            tid,x1,y1,x2,y2,level = stack.pop(0)
+        # while stack:
+        for tid,x1,y1,x2,y2,level in tqdm(stack, desc=f"Tiles {z['name']}", unit="tile", leave=False):
+            # tid,x1,y1,x2,y2,level = stack.pop(0)
             processed += 1
             if dry_run_tiles and count >= dry_run_tiles:
                 continue

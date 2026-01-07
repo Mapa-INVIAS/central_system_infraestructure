@@ -1,0 +1,6 @@
+{% extends "admin/index.html" %}
+
+{% block content %}
+  <h2>Bienvenido <a href="/admin/"><b>{{ user.username }}</b></a> al panel de administración</h2>
+  {{ block.super }}
+{% endblock %}

@@ -1,57 +1,245 @@
 /* General styles */
-    html,
-    body {
-      padding: 0;
-      margin: 0;
-      height: 100%;
-      width: 100%;
-    }
 
+* {
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+  height: 100%;
+  width: 100%;
+}
 
 /* Map styles */
 
-    #terrainAnalysisDiv {
-      background-color: var(--calcite-color-background);
-      padding: 10px;
-      overflow-y: auto;
-    }
+#terrainAnalysisDiv {
+  background-color: var(--calcite-color-background);
+  padding: 10px;
+  overflow-y: auto;
+}
 
-    #compassRoseDiv {
-      display: flex;
-      flex-direction: row;
-      justify-content: space-evenly;
-    }
+#compassRoseDiv {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-evenly;
+}
 
-    #compassRoseSvg {
-      width: 130px;
-    }
+#compassRoseSvg {
+  width: 130px;
+}
 
-    #compassRoseSvg text {
-      fill: var(--calcite-color-text-1);
-      font-size: 6px;
-    }
+#compassRoseSvg text {
+  fill: var(--calcite-color-text-1);
+  font-size: 6px;
+}
 
-    .roseDirection {
-      fill: none;
-      stroke: var(--calcite-color-border-input);
-      stroke-width: 1px;
-      pointer-events: all;
-      cursor: pointer;
-    }
+.roseDirection {
+  fill: none;
+  stroke: var(--calcite-color-border-input);
+  stroke-width: 1px;
+  pointer-events: all;
+  cursor: pointer;
+}
 
-    .roseDirection.active {
-      fill: var(--calcite-color-brand);
-    }
+.roseDirection.active {
+  fill: var(--calcite-color-brand);
+}
 
-    #colorButton {
-      border: 1px solid var(--calcite-color-border-input);
-      width: 35px;
-      height: 25px;
-      background-color: rgb(0, 122, 194);
-      cursor: pointer;
-    }
+#colorButton {
+  border: 1px solid var(--calcite-color-border-input);
+  width: 35px;
+  height: 25px;
+  background-color: rgb(0, 122, 194);
+  cursor: pointer;
+}
+
+/* Interfaces styles */
+
+/* Header con logo */
+header {
+  background-color: #2c3e50;
+  color: white;
+  padding: 15px;
+  text-align: center;
+}
+
+header img {
+  height: 60px;
+  vertical-align: middle;
+}
+
+header h1 {
+  display: inline-block;
+  margin-left: 10px;
+  font-size: 1.5rem;
+  vertical-align: middle;
+}
+
+/* Centrado del formulario */
+section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 70vh;
+  /* background-color: #ecf0f1; */
+  background-color: #fff;
+}
+
+section.sukubun {
+  display: grid;
+  align-content: center;
+}
+
+form {
+  background: white;
+  margin: 0.3rem 0;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  width: 500px;
+}
+
+form h1 {
+  font-size: 1.2rem;
+  margin-bottom: 20px;
+  color: #34495e;
+}
+
+form input[type="file"],
+form input[type="text"],
+form input[type="submit"],
+form input[type="password"],
+form input[type="number"],
+form select,
+button,
+a {
+  display: block;
+  width: 100%;
+  margin: 10px 0;
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #bdc3c7;
+}
+
+a.logoutbtn {
+  color: red;
+  text-decoration: none;
+  border: none;
+  font-weight: 600;
+  text-align: right;
+}
 
 
-/* Login sukubun */
+form input[type="submit"] {
+  background-color: #3498db;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
 
+form input[type="submit"]:hover {
+  background-color: #2980b9;
+}
+
+label {
+  display: block;
+  width: 100%;
+  text-align: right;
+  font-size: 1.2rem;
+  color: #34495e;
+  font-weight: bold;
+}
+
+.content-alert,
+.content-buttons {
+  display: flex;
+  align-items: center;
+  padding: 0 1rem;
+  color: red;
+  font-weight: lighter;
+  justify-content: space-between;
+  /* background: linear-gradient(45deg, blue, cyan); */
+}
+
+.content-buttons {
+  margin: 0;
+  padding: 0;
+  background: none;
+}
+
+.content-buttons button,
+.content-buttons input[type="submit"] {
+  margin: 10px 0.5rem;
+}
+
+button,
+.button-stop {
+  margin: 10px 8px;
+  background-color: #34db95;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: background 0.3s ease;
+  text-decoration: none;
+  font-weight: lighter;
+}
+
+button:hover,
+.button-stop:hover {
+  background-color: #29b9a3;
+}
+
+button.close-btn {
+  padding: 0;
+  width: 25px;
+  height: 25px;
+  background-color: red;
+  border-radius: 5px;
+}
+
+/* Footer */
+footer {
+  background-color: #2c3e50;
+  color: white;
+  text-align: center;
+  padding: 15px;
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+}
+
+/* Table */
+
+table { 
+  width: 100%; 
+  border-collapse: collapse; 
+}
+
+thead { 
+  text-align: center;
+  background-color: #3498db;
+  color: #fff;
+  font-weight: bold;
+  padding: 8px; 
+  border: 1px solid #ccc; 
+} 
+
+td { 
+  padding: 8px; 
+  border: 1px solid #ccc; 
+} 
+
+td:first-child { 
+  text-align: left; 
+} 
+
+td:nth-child(2) { 
+  text-align: right; 
+}
 

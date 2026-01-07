@@ -7,7 +7,6 @@ import geopandas as gpd
 from tqdm import tqdm
 from shapely.geometry import Point, LineString, MultiLineString, MultiPoint
 from shapely.ops import unary_union, linemerge, nearest_points, split
-from shapely import set_precision
 
 import matplotlib.pyplot as plt
 from concurrent.futures import ProcessPoolExecutor, as_completed

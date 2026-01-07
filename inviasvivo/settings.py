@@ -69,6 +69,10 @@ BOT_CHAT_ID = "1534579574"
 # Application definition
 
 INSTALLED_APPS = [
+    'demos',
+    'frontend',
+    'backend',
+    'clase',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -81,10 +85,6 @@ INSTALLED_APPS = [
     'django_celery_beat',
     'corsheaders',
     'storages',
-    'frontend',
-    'backend',
-    'demos',
-    'clase',
     'django_cleanup.apps.CleanupConfig',
 ]
 
@@ -209,6 +209,8 @@ EXPORTS_DIR = MEDIA_ROOT / "exportsGCS"
     # ('*/5 * * * *', 'demos.cron.my_scheduled_job'),  # cada 5 minutos
 # ]
 
+LOGIN_URL = '/demos/'
+LOGIN_REDIRECT_URL = '/demos/'
 
 ###############################################################################
 

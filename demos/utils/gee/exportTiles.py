@@ -7,7 +7,7 @@ import datetime as dt
 from pathlib import Path
 from typing import List, Dict, Tuple, Optional
 from tqdm import tqdm
-
+from demos.utils.control import should_stop_pipeline, set_stop_pipeline
 
 import ee
 import geemap
@@ -68,7 +68,7 @@ TILE_SIZE_KM   = 50      # lado de la tesela inicial por zona
 OVERLAP_KM     = 0       # buffer opcional del tile bbox (en km)
 
 # Control
-MAX_CONCURRENT = 4       # tasks GEE simultáneas
+# MAX_CONCURRENT = 4       # tasks GEE simultáneas
 PAUSE_BETWEEN  = 0.2     # segundos entre task.start()
 
 # Subdivisión recursiva
@@ -223,7 +223,11 @@ def current_running_tasks():
     return sum(1 for t in ee.batch.Task.list() if t.active())
 
 def wait_for_slot(max_c):
+    max_c = max_c or 1
     while current_running_tasks() >= max_c:
+        if should_stop_pipeline():
+            logger.warning("STOP detectado dentro de wait_for_slot. Rompiendo espera.")
+            break
         time.sleep(1)
 
 def start_export_task(img, aoi, zname, tid, xmin, ymin, xmax, ymax, basename, scale):
@@ -257,9 +261,12 @@ def bbox_too_small(xmin,ymin,xmax,ymax):
 # =========================
 # ENTRYPOINT
 # =========================
-def run_s2_export(limit_zones=None, dry_run_tiles=None):
+logger = logging.getLogger(__name__)
+def run_s2_export(limit_zones=None, dry_run_tiles=None, MAX_CONCURRENT=None):
+    set_stop_pipeline(False)
     ee_init_with_service_account()
     start, end = date_range()
+
 
     gdf = load_mask_gdf()
     split = pick_split_field(gdf)
@@ -269,10 +276,13 @@ def run_s2_export(limit_zones=None, dry_run_tiles=None):
         zones = zones[:limit_zones]
 
     basename = dt.datetime.utcnow().strftime("%Y%m%d_%H%M")
-
     processed = submitted = 0
 
     for z in tqdm(zones, desc="Procesando zonas", unit="zona"):
+        if should_stop_pipeline():
+            logger.warning("STOP detectado en loop de zonas. Saliendo.")
+            break
+
         aoi = gdf_to_ee_aoi(z["gdf"])
         s2 = ensure_default_projection(build_s2_mosaic(aoi, start, end), CRS_EXPORT, SCALE_EXPORT_M)
         tiles = tiles_from_zone(z["union"], TILE_SIZE_KM, OVERLAP_KM)
@@ -283,11 +293,20 @@ def run_s2_export(limit_zones=None, dry_run_tiles=None):
         # while stack:
         for tid,x1,y1,x2,y2,level in tqdm(stack, desc=f"Tiles {z['name']}", unit="tile", leave=False):
             # tid,x1,y1,x2,y2,level = stack.pop(0)
+
+            if should_stop_pipeline():
+                logger.warning("STOP detectado en loop de tiles. Saliendo.")
+                break
+
             processed += 1
             if dry_run_tiles and count >= dry_run_tiles:
                 continue
 
             wait_for_slot(MAX_CONCURRENT)
+            if should_stop_pipeline():
+                logger.warning("STOP detectado después de wait_for_slot. Saliendo.")
+                break
+
             try:
                 start_export_task(s2,aoi,z["name"],tid,x1,y1,x2,y2,basename,SCALE_EXPORT_M)
                 submitted += 1
@@ -303,5 +322,6 @@ def run_s2_export(limit_zones=None, dry_run_tiles=None):
         "zones": len(zones),
         "processed": processed,
         "enqueued": submitted,
-        "date_range": [start, end]
+        "date_range": [start, end],
+        "MAX_CONCURRENT": MAX_CONCURRENT
     }

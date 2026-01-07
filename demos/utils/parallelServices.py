@@ -1,5 +1,7 @@
-import math
-import os
+import math, os, uuid
+from demos.utils.control import should_stop_pipeline
+from pathlib import Path
+from django.conf import settings
 
 ####################################################################
 ################# Códigos de servicios paralelos ###################
@@ -11,10 +13,100 @@ from .services.B_Union import UnirShapefile
 from .services.C_Rasterizar import RasterizarCarpetaSHP
 from .services.D_Dist_Euclideana import DistanciaEuclidiana
 
+from .kripley02 import KRipley_HS
 ####################################################################
 
 
 def pipeline_process(output_dir, input_name):
+
+    # Ejecución de K-Ripley
+
+    if should_stop_pipeline():
+        return {"status": "stopped", "stage": "Sukubun"}
+
+    # ============================
+    # ETAPA K-Ripley
+    # ============================
+    media_root = Path(settings.MEDIA_ROOT)
+    uploads_folder = media_root / "SUKUBUN"
+
+    excel_files = list(uploads_folder.glob("*.xlsx")) + list(uploads_folder.glob("*.xls"))
+    if not excel_files:
+        raise FileNotFoundError(f"No se encontró ningún archivo Excel en {uploads_folder}")
+
+    excel_path = max(excel_files, key=lambda f: f.stat().st_mtime)
+    roads_path = media_root / "Vias_Total" / "Vias_Total.shp"
+
+    if not excel_path.exists():
+        raise FileNotFoundError(f"No existe el Excel: {excel_path}")
+    if not roads_path.exists():
+        raise FileNotFoundError(f"No existe el SHP de vías: {roads_path}")
+
+    # Parámetros (puedes pasarlos como parte de payload o usar defaults)
+    excel_sheet = "SUKUBUN"
+    lat_field   = "y"
+    lon_field   = "x"
+
+    simplify_tolerance_m = 1.0
+    precision_scale      = 0.001
+    segment_spacing_m    = 50.0
+    snap_tolerance_m     = 90.0
+    r_start_m            = 100.0
+    r_step_m             = 500.0
+
+    n_sim_ripley  = 100
+    n_sim_hotspot = 100
+    random_seed   = 321
+
+    hs_point_spacing_m   = 50.0
+    n_workers            = 2
+    max_hs_sample_points = None
+    plot_png             = True
+
+    run_id = uuid.uuid4().hex[:8]
+    output_folder = media_root / "kripley_runs" / run_id
+    output_folder.mkdir(parents=True, exist_ok=True)
+
+    export_csv_hotspots_name = "hotspots.csv"
+    export_csv_ripley_name   = "ripley_L.csv"
+    export_shp_vias_name     = "vias_simplificadas.shp"
+
+    KRipley_HS(
+        excel_path,
+        excel_sheet,
+        lat_field,
+        lon_field,
+        roads_path,
+        str(output_folder),
+        simplify_tolerance_m,
+        precision_scale,
+        segment_spacing_m,
+        snap_tolerance_m,
+        r_start_m,
+        r_step_m,
+        n_sim_ripley,
+        random_seed,
+        n_sim_hotspot,
+        hs_point_spacing_m,
+        export_csv_hotspots_name,
+        export_csv_ripley_name,
+        export_shp_vias_name,
+        plot_png,
+        n_workers,
+        max_hs_sample_points
+    )
+
+    # return {
+    #     "status": "ok",
+    #     "run_id": run_id,
+    #     "output_folder": str(output_folder),
+    #     "outputs": {
+    #         "ripley": export_csv_ripley_name,
+    #         "hotspots": export_csv_hotspots_name,
+    #         "vias": export_shp_vias_name,
+    #         "metadata": "metadata.json"
+    #     }
+    # }
 
     # Configuración general
     CHUNK_INICIAL = 1000
@@ -28,6 +120,9 @@ def pipeline_process(output_dir, input_name):
     MAX_DEPTH = 2
     UMBRAL_PARALELO = 1000
     WKID_SALIDA = 4326
+
+    if should_stop_pipeline():
+        return {"status": "stopped", "stage": "Unir aguas"}
 
      # Ejecución bajar partes C_Agua
     URL = "https://mapas2.igac.gov.co/server/rest/services/carto/carto100000colombia2019/MapServer"
@@ -52,6 +147,8 @@ def pipeline_process(output_dir, input_name):
                         FORMATO_SALIDA,
                         WKID_SALIDA)
 
+    if should_stop_pipeline():
+        return {"status": "stopped", "stage": "RUNAP"}
 
     # Ejecución bajar RUNAP
     URL = "https://mapas.parquesnacionales.gov.co/arcgis/rest/services/pnn/runap/MapServer"
@@ -75,6 +172,9 @@ def pipeline_process(output_dir, input_name):
                         UMBRAL_PARALELO,
                         FORMATO_SALIDA,
                         WKID_SALIDA)
+    
+    if should_stop_pipeline():
+        return {"status": "stopped", "stage": "IDEAM"}
 
 
     # BAJAR servidor FTP IDEAM
@@ -93,6 +193,9 @@ def pipeline_process(output_dir, input_name):
                         TIMEOUT,
                         BASE_URL,
                         NOMBRE_FINAL)
+    
+    if should_stop_pipeline():
+        return {"status": "stopped", "stage": "OSM"}
 
 
     # BAJAR OSM
@@ -162,4 +265,4 @@ def pipeline_process(output_dir, input_name):
                         input_name,
                         CARPETA_SALIDA,
                         VALOR_FUENTE)
-
+    

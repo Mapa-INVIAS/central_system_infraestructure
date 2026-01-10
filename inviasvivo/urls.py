@@ -24,8 +24,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('frontend.urls')),
     path('demos/', include('demos.urls')),
-    # Nuevo enlace
-    # path('clase/', include('clase.urls')),
 ]
 
 if settings.DEBUG:

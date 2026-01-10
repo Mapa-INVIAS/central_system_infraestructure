@@ -1,14 +1,8 @@
 {% extends 'index.html' %}
 {% block title %}: Servicios{% endblock %}
-{% block content %}
-
 <!-- Header content -->
-<header>
-    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/INV%C3%8DAS_Colombia_logo.png/1200px-INV%C3%8DAS_Colombia_logo.png"
-        alt="Logo">
-    <h1>INVIASVIVO{% block header %}: SERVICIOS PARALELOS{% endblock %}</h1>
-</header>
-
+{% block header %}: SERVICIOS PARALELOS{% endblock %}
+{% block content %}
 
 <section class="sukubun">
     <form id="uploadForm" action="{% url 'db_sukubun' %}" method="post" enctype="multipart/form-data">

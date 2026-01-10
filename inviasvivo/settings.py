@@ -31,6 +31,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
+
 CORS_ALLOW_ALL_ORIGINS = True
 
 # CORS
@@ -69,10 +70,9 @@ BOT_CHAT_ID = "1534579574"
 # Application definition
 
 INSTALLED_APPS = [
+    'admin_interface',
     'demos',
     'frontend',
-    'backend',
-    'clase',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -86,6 +86,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'storages',
     'django_cleanup.apps.CleanupConfig',
+    'colorfield',
 ]
 
 MIDDLEWARE = [
@@ -154,7 +155,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'es-spa'
 
 TIME_ZONE = 'UTC'
 

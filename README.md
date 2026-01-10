@@ -122,6 +122,9 @@ flowchart TD
 
 - conda install conda-forge::[package] <!-- Para el caso de esta configuración -->
 
+## Instalación individual de paquetes del proyecto con Pip
+- pip install nombre_libreria <!-- Debe tener activado el entorno Conda -->
+
 ## Errores comnunes durante corrida del modelo MAXENT [[maxent02.py](https://github.com/Mapa-INVIAS/central_system_infraestructure/blob/main/demos/utils/maxent02.py)]
 
 - Bajar el sistema 

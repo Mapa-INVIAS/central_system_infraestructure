@@ -1,20 +1,27 @@
-/* General styles */
-
+/* Reset y base */
 * {
   box-sizing: border-box;
   font-family: Arial, sans-serif;
   font-size: 14px;
 }
 
-html,
-body {
+/* Layout principal con grid */
+html, body {
   padding: 0;
   margin: 0;
   height: 100%;
   width: 100%;
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr auto; /* header | contenido | footer */
+  background: #fff;
 }
 
-/* Map styles */
+/* Map styles (se mantienen) */
+
+.calcite-mode-dark {
+  display: block;
+}
 
 #terrainAnalysisDiv {
   background-color: var(--calcite-color-background);
@@ -57,9 +64,8 @@ body {
   cursor: pointer;
 }
 
-/* Interfaces styles */
 
-/* Header con logo */
+/* Header */
 header {
   background-color: #2c3e50;
   color: white;
@@ -79,13 +85,16 @@ header h1 {
   vertical-align: middle;
 }
 
-/* Centrado del formulario */
+/* Contenido (crece sin superponer) */
+main {
+  overflow: auto; /* scroll si es necesario */
+}
+
 section {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 70vh;
-  /* background-color: #ecf0f1; */
+  min-height: auto; /* evita empujar el footer innecesariamente */
   background-color: #fff;
 }
 
@@ -94,6 +103,16 @@ section.sukubun {
   align-content: center;
 }
 
+/* Footer (no fixed) */
+footer {
+  background-color: #2c3e50;
+  color: white;
+  text-align: center;
+  padding: 15px;
+  width: 100%;
+}
+
+/* Formulario */
 form {
   background: white;
   margin: 0.3rem 0;
@@ -134,7 +153,6 @@ a.logoutbtn {
   text-align: right;
 }
 
-
 form input[type="submit"] {
   background-color: #3498db;
   color: white;
@@ -156,6 +174,7 @@ label {
   font-weight: bold;
 }
 
+/* Botones y alertas */
 .content-alert,
 .content-buttons {
   display: flex;
@@ -164,7 +183,6 @@ label {
   color: red;
   font-weight: lighter;
   justify-content: space-between;
-  /* background: linear-gradient(45deg, blue, cyan); */
 }
 
 .content-buttons {
@@ -203,19 +221,7 @@ button.close-btn {
   border-radius: 5px;
 }
 
-/* Footer */
-footer {
-  background-color: #2c3e50;
-  color: white;
-  text-align: center;
-  padding: 15px;
-  position: fixed;
-  bottom: 0;
-  width: 100%;
-}
-
-/* Table */
-
+/* Tabla */
 table { 
   width: 100%; 
   border-collapse: collapse; 

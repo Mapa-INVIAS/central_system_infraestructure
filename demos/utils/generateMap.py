@@ -236,24 +236,4 @@ class PostProcesamientoMaxEnt:
 
         gdf.to_file(ruta, driver=driver_salida)
         print("Archivo final guardado:", ruta)
-
-
-
-# ============================================================
-# EJECUCIÓN DIRECTA
-# ============================================================
-if __name__ == "__main__":
-
-    ruta_raster_maxent =    r"RasterResult/raster_resultado1_1.tif"
-    ruta_vias =             r"a_Pacifico/vias.shp"
-    ruta_salidas =          r"a_Pacifico/viaRANGOS/vector_salida"
-    min_area_m2=            100
-    campo_clase=            "clase_prob"
-    campo_rango=            "rango_prob"
-
-    PostProcesamientoMaxEnt(ruta_raster_maxent,
-                            ruta_vias,
-                            ruta_salidas,
-                            min_area_m2,
-                            campo_clase,
-                            campo_rango)
+        

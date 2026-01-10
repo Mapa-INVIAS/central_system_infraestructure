@@ -133,8 +133,10 @@ def run_gee_pipeline(request):
                 body = {}
             
             MAX_CONCURRENT = int(request.POST.get("MAX_CONCURRENT", body.get("MAX_CONCURRENT", 3)))
+            PERIOD_AVERAGE = request.POST.get("PERIOD_AVERAGE", body.get("PERIOD_AVERAGE", 3))
 
-            results = gee_pipeline(body, MAX_CONCURRENT)
+
+            results = gee_pipeline(body, MAX_CONCURRENT, PERIOD_AVERAGE)
 
             resultado = "Proceso terminado con éxito ✅"
             # Notificar al finalizar 
@@ -374,7 +376,6 @@ def dbSukubun(request):
 # ======================================================================= #
 ###########################################################################
 
-
 from rpy2.robjects import conversion
 try:
     from rpy2.robjects.conversion import _converter as rpy2_converter  # para versiones nuevas
@@ -401,8 +402,15 @@ def model_maxent(request):
         jackknife_root = os.path.join(settings.MEDIA_ROOT, "jacknife")
 
         if not os.path.isdir(jackknife_root):
+            error_message = (
+                    f"❌ El sistema no encontro la carpeta jacknife verifique en \n\n" 
+                    f"el sistema si existe.\n\n"
+                    f"status=404"
+                )
+
+            send_telegram_message(error_message)
             return JsonResponse(
-                {"status": "error", "message": "No existe la carpeta jackknife"},
+                {"status": "error", "message": "No existe la carpeta jacknife"},
                 status=404
             )
 
@@ -414,7 +422,7 @@ def model_maxent(request):
 
         if not regiones:
             return JsonResponse(
-                {"status": "error", "message": "No hay regiones dentro de jackknife"},
+                {"status": "error", "message": "No hay regiones dentro de jacknife"},
                 status=400
             )
 
@@ -445,17 +453,17 @@ def model_maxent(request):
         #          Notificación           # 
         # ------------------------------- #
 
-        enlace = reverse("ejecutar_proceso")
+        enlace = reverse("process_actions")
         dominio = "http://127.0.0.1:8000"
         url_completa = f"{dominio}{enlace}"
 
         mensaje = ( 
-            f"El proceso MaxEnt finalizó.\n\n" 
+            f"✅ El proceso MaxEnt finalizó.\n\n" 
             f"Regiones procesadas: {', '.join(regiones)}\n" 
             f"Resultados: {resultados}\n\n" 
             f"Dirijase a descargar los resultados en ({url_completa})" )
         
-        send_telegram_message(mensaje, parse_mode="Markdown")
+        send_telegram_message(mensaje)
 
         return JsonResponse({
             "status": "ok",
@@ -464,6 +472,14 @@ def model_maxent(request):
         })
 
     except Exception as e:
+
+        error_message = (
+                    f"❌ Fallo el proceso de Maxent model. \n\n"
+                    f"Error: {str(e)}"
+                )
+
+        send_telegram_message(error_message)
+
         return JsonResponse({
             "status": "error",
             "message": str(e),
@@ -478,6 +494,63 @@ def model_maxent(request):
 #
 # ======================================================================= #
 ###########################################################################
+
+# ######## Funciones de preproceso
+
+from .utils.generateMap import PostProcesamientoMaxEnt
+
+def run_generateMap(request):
+
+    base_dir = Path(settings.MEDIA_ROOT)
+    # Directorios base
+    maxent_dir = base_dir / "maxent_invias"
+    jacknife_dir = base_dir / "jacknife"
+
+    # Lista de regiones
+    regiones = ["a_Amazonas", "b_Orinoquia", "c_Pacifico", "d_Caribe", "e_Andina"]
+
+    # Parámetros
+    min_area_m2 = 100
+    campo_clase = "clase_prob"
+    campo_rango = "rango_prob"
+
+    resultados = []
+
+    for region in regiones:
+        try:
+
+            print("================================")
+            print(f"==Procesando región: {region}==")
+            print("================================")
+
+            ruta_raster_maxent = os.path.join(maxent_dir, region, "RasterResult", "resultado_maxent.tif")
+            ruta_vias = os.path.join(jacknife_dir, region, "vias.shp")
+            carpeta_salida = os.path.join(base_dir,"nuevo_mapa", region)
+
+            PostProcesamientoMaxEnt(
+                ruta_raster_maxent,
+                ruta_vias,
+                carpeta_salida,
+                min_area_m2,
+                campo_clase,
+                campo_rango
+            )
+
+            resultados.append({
+                "region": region,
+                "status": "ok",
+                "output_dir": carpeta_salida
+            })
+
+        except Exception as e:
+            resultados.append({
+                "region": region,
+                "status": "error",
+                "message": str(e)
+            })
+
+    return JsonResponse({"resultados": resultados})
+
 
 # Tranformar de tiff a geojson
 def tiff_geo(request, project_name):
@@ -514,8 +587,12 @@ def tiff_geo(request, project_name):
 
 # ==================================================================== #
 # ==================================================================== #
+
 # User Visual interfaces
 
 
-def posprocess_actions(request):
+def process_actions(request):
     return render(request, 'new_map.html')
+
+def generate_map(request):
+    return render(request, 'data_map.html')

@@ -71,6 +71,7 @@ OVERLAP_KM     = 0       # buffer opcional del tile bbox (en km)
 # MAX_CONCURRENT = 4       # tasks GEE simultáneas
 PAUSE_BETWEEN  = 0.2     # segundos entre task.start()
 
+
 # Subdivisión recursiva
 MAX_SPLIT_DEPTH = 3      # niveles máximos de subdivisión (0=sin split; 1=una vez; etc.)
 MIN_TILE_KM     = 3      # no subdividir si un lado baja de ~3 km (para evitar microteselas)
@@ -105,11 +106,27 @@ def ee_init_with_service_account():
     )
 
 
-def date_range():
+# Period average
+PERIOD_AVERAGE = "annual"
+PERIOD_DAYS = {
+    "annual": 365,
+    "semi-annual": 180,
+    "quarterly": 90,
+}.get(PERIOD_AVERAGE, 0)
+
+# if PERIOD_AVERAGE == "annual":
+#     PERIOD_DAYS = 365
+# elif PERIOD_AVERAGE == "semi-annual":
+#     PERIOD_DAYS = 180
+# elif PERIOD_AVERAGE == "quarterly":
+#     PERIOD_DAYS = 90
+
+
+def date_range(PERIOD_DAYS):
     if not DYNAMIC_DATES:
         return DATE_START_FIX, DATE_END_FIX
     today = dt.date.today()
-    start = today - dt.timedelta(days=365)
+    start = today - dt.timedelta(days=PERIOD_DAYS) # inyectar variable de promedio
     return start.strftime("%Y-%m-%d"), today.strftime("%Y-%m-%d")
 
 # =========================
@@ -262,10 +279,15 @@ def bbox_too_small(xmin,ymin,xmax,ymax):
 # ENTRYPOINT
 # =========================
 logger = logging.getLogger(__name__)
-def run_s2_export(limit_zones=None, dry_run_tiles=None, MAX_CONCURRENT=None):
+def run_s2_export(limit_zones=None, dry_run_tiles=None, MAX_CONCURRENT=None, PERIOD_AVERAGE=None):
     set_stop_pipeline(False)
     ee_init_with_service_account()
-    start, end = date_range()
+
+
+    mapping = {"annual": 365, "semi-annual": 180, "quarterly": 90}
+    PERIOD_DAYS = mapping.get(PERIOD_AVERAGE, 0)
+
+    start, end = date_range(PERIOD_DAYS)
 
 
     gdf = load_mask_gdf()
@@ -323,5 +345,5 @@ def run_s2_export(limit_zones=None, dry_run_tiles=None, MAX_CONCURRENT=None):
         "processed": processed,
         "enqueued": submitted,
         "date_range": [start, end],
-        "MAX_CONCURRENT": MAX_CONCURRENT
+        "MAX_CONCURRENT": MAX_CONCURRENT,
     }

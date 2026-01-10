@@ -1,12 +1,7 @@
 {% extends 'index.html' %}
-
+<!-- Header content -->
+ {% block header %}: GENERAR MAPA {% endblock %}
 {% block content %}
-
-
-<header> 
-   <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/INV%C3%8DAS_Colombia_logo.png/1200px-INV%C3%8DAS_Colombia_logo.png" alt="Logo">
-   <h1>INVIASVIVO:MAXENT</h1>
-</header>
 
 <section>
     <form action="{% url 'ejecutar_maxent' %}" method="post">

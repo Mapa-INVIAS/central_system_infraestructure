@@ -1,14 +1,8 @@
 {% extends 'index.html' %}
 {% block title %}: Carga{% endblock %}
-{% block content %}
-
 <!-- Header content -->
-<header>
-    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/INV%C3%8DAS_Colombia_logo.png/1200px-INV%C3%8DAS_Colombia_logo.png"
-        alt="Logo">
-    <h1>INVIASVIVO{% block header %}: GENERAR INSUMOS{% endblock %}</h1>
-</header>
-
+{% block header %}: GENERAR INSUMOS{% endblock %}
+{% block content %}
 
 <section>
     <form action="{% url 'gee_pipeline_run' %}" method="post">
@@ -17,23 +11,17 @@
         <h1>Interface para lanzar proceso generación de insumos</h1>
         <label for="">Tareas simultaneas</label>
         <input type="number" name="MAX_CONCURRENT" id="" value="3" min="1" max="5">
-        <!-- <label for="">Estado fecha</label>
-        <select name="" id="">
-          <option value="">Dinámico</option>
-          <option value="">Ingreso</option>
-        </select> -->
+        <label for="">Valor promedio</label>
+        <select name="PERIOD_AVERAGE">
+          <option value="annual">Anual</option>
+          <option value="semi-annual">Semestral</option>
+          <option value="quarterly">trimestral</option>
+        </select>
         <div class="content-buttons">
           <input type="submit" value="Generar insumos">
           <a type="submit" class="button-stop" href="{% url 'stop_pipeline' %}" onclick="return confirm('¿Está seguro de que desea detener el proceso?')">Detener proceso</a>
         </div>
     </form>
-
-    <!-- <form method="post" action="{% url 'stop_pipeline' %}">
-    {% csrf_token %}
-    <button type="submit" class="btn btn-danger" onclick="return confirm('¿Está seguro de que desea detener el proceso?')">
-        Detener proceso
-    </button>
-</form> -->
 
 </section>
 

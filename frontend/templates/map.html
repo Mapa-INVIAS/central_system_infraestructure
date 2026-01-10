@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="en">
 
@@ -8,7 +7,7 @@
   <title>Terrain analysis with raster functions | Sample | ArcGIS Maps SDK for JavaScript 4.33</title>
 
   {% load static %}
-    <link rel="stylesheet" href="{% static 'frontend/styles/styles.css' %}">
+  <link rel="stylesheet" href="{% static 'frontend/styles/styles.css' %}">
 
 
   <!-- Load Calcite components from CDN -->
@@ -23,86 +22,93 @@
 </head>
 
 <body class="calcite-mode-dark">
-  <arcgis-scene item-id="dac0b9b188e146baa504c9cfb6eb8d00">
-    <arcgis-zoom position="top-left"></arcgis-zoom>
-    <arcgis-navigation-toggle position="top-left"></arcgis-navigation-toggle>
-    <arcgis-compass position="top-left"></arcgis-compass>
-    <arcgis-expand position="top-left">
-      <arcgis-legend></arcgis-legend>
-    </arcgis-expand>
-    <arcgis-basemap-toggle position="bottom-left"></arcgis-basemap-toggle>
-    <arcgis-placement position="top-right">
-      <div id="terrainAnalysisDiv">
-        <calcite-segmented-control id="analysisModeSegmentedControl">
-          <calcite-segmented-control-item icon-start="surface" value="Custom" checked>Custom</calcite-segmented-control-item>
-          <calcite-segmented-control-item icon-start="altitude" value="Elevation">Elevation</calcite-segmented-control-item>
-          <calcite-segmented-control-item icon-start="take-pedestrian-ramp" value="Slope">Slope</calcite-segmented-control-item>
-        </calcite-segmented-control>
-        <br />
-        <calcite-label scale="s">
-          Transparency | %
-          <calcite-slider id="opacitySlider" value="20" label-handles max-label="100" min-label="0" ticks="10"></calcite-slider>
-        </calcite-label>
-
-        <div id="customAnalysisDiv">
+  
+    <arcgis-scene item-id="dac0b9b188e146baa504c9cfb6eb8d00">
+      <arcgis-zoom position="top-left"></arcgis-zoom>
+      <arcgis-navigation-toggle position="top-left"></arcgis-navigation-toggle>
+      <arcgis-compass position="top-left"></arcgis-compass>
+      <arcgis-expand position="top-left">
+        <arcgis-legend></arcgis-legend>
+      </arcgis-expand>
+      <arcgis-basemap-toggle position="bottom-left"></arcgis-basemap-toggle>
+      <arcgis-placement position="top-right">
+        <div id="terrainAnalysisDiv">
+          <calcite-segmented-control id="analysisModeSegmentedControl">
+            <calcite-segmented-control-item icon-start="surface" value="Custom"
+              checked>Custom</calcite-segmented-control-item>
+            <calcite-segmented-control-item icon-start="altitude"
+              value="Elevation">Elevation</calcite-segmented-control-item>
+            <calcite-segmented-control-item icon-start="take-pedestrian-ramp"
+              value="Slope">Slope</calcite-segmented-control-item>
+          </calcite-segmented-control>
+          <br />
           <calcite-label scale="s">
-            Elevation | m.a.s.l
-            <calcite-slider id="elevationSlider" min-value="2000" max-value="9000" min="-500" max="9000" ticks="500" step="50" snap label-handles max-label="Max Elevation" min-label="Min Elevation"></calcite-slider>
+            Transparency | %
+            <calcite-slider id="opacitySlider" value="20" label-handles max-label="100" min-label="0"
+              ticks="10"></calcite-slider>
           </calcite-label>
-          <calcite-label scale="s">
-            Slope | °
-            <calcite-slider id="slopeSlider" min-value="10" max-value="90" min="0" max="90" ticks="5" step="1" snap label-handles max-label="Max Slope" min-label="Min Slope"></calcite-slider>
-          </calcite-label>
-          <calcite-label scale="s">
-            Aspect
-            <div id="compassRoseDiv">
-              <svg id="compassRoseSvg" xmlns="http://www.w3.org/2000/svg" viewBox="-50 -50 100 100">
-                <!-- North -->
-                <polygon points="0,-40 5,-15 -5,-15" data-aspect="n" class="roseDirection"></polygon>
-                <text x="0" y="-45" text-anchor="middle">N</text>
 
-                <!-- North-East -->
-                <polygon points="22,-22 15,-5 5,-15" data-aspect="ne" class="roseDirection"></polygon>
-                <text x="30" y="-30" text-anchor="middle">NE</text>
+          <div id="customAnalysisDiv">
+            <calcite-label scale="s">
+              Elevation | m.a.s.l
+              <calcite-slider id="elevationSlider" min-value="2000" max-value="9000" min="-500" max="9000" ticks="500"
+                step="50" snap label-handles max-label="Max Elevation" min-label="Min Elevation"></calcite-slider>
+            </calcite-label>
+            <calcite-label scale="s">
+              Slope | °
+              <calcite-slider id="slopeSlider" min-value="10" max-value="90" min="0" max="90" ticks="5" step="1" snap
+                label-handles max-label="Max Slope" min-label="Min Slope"></calcite-slider>
+            </calcite-label>
+            <calcite-label scale="s">
+              Aspect
+              <div id="compassRoseDiv">
+                <svg id="compassRoseSvg" xmlns="http://www.w3.org/2000/svg" viewBox="-50 -50 100 100">
+                  <!-- North -->
+                  <polygon points="0,-40 5,-15 -5,-15" data-aspect="n" class="roseDirection"></polygon>
+                  <text x="0" y="-45" text-anchor="middle">N</text>
 
-                <!-- East -->
-                <polygon points="40,0 15,5 15,-5" data-aspect="e" class="roseDirection"></polygon>
-                <text x="45" y="2" text-anchor="middle">E</text>
+                  <!-- North-East -->
+                  <polygon points="22,-22 15,-5 5,-15" data-aspect="ne" class="roseDirection"></polygon>
+                  <text x="30" y="-30" text-anchor="middle">NE</text>
 
-                <!-- South-East -->
-                <polygon points="22,22 5,15 15,5" data-aspect="se" class="roseDirection active"></polygon>
-                <text x="30" y="30" text-anchor="middle">SE</text>
+                  <!-- East -->
+                  <polygon points="40,0 15,5 15,-5" data-aspect="e" class="roseDirection"></polygon>
+                  <text x="45" y="2" text-anchor="middle">E</text>
 
-                <!-- South -->
-                <polygon points="0,40 -5,15 5,15" data-aspect="s" class="roseDirection active"></polygon>
-                <text x="0" y="48" text-anchor="middle">S</text>
+                  <!-- South-East -->
+                  <polygon points="22,22 5,15 15,5" data-aspect="se" class="roseDirection active"></polygon>
+                  <text x="30" y="30" text-anchor="middle">SE</text>
 
-                <!-- South-West -->
-                <polygon points="-22,22 -15,5 -5,15" data-aspect="sw" class="roseDirection active"></polygon>
-                <text x="-30" y="30" text-anchor="middle">SW</text>
+                  <!-- South -->
+                  <polygon points="0,40 -5,15 5,15" data-aspect="s" class="roseDirection active"></polygon>
+                  <text x="0" y="48" text-anchor="middle">S</text>
 
-                <!-- West -->
-                <polygon points="-40,0 -15,-5 -15,5" data-aspect="w" class="roseDirection"></polygon>
-                <text x="-45" y="2" text-anchor="middle">W</text>
+                  <!-- South-West -->
+                  <polygon points="-22,22 -15,5 -5,15" data-aspect="sw" class="roseDirection active"></polygon>
+                  <text x="-30" y="30" text-anchor="middle">SW</text>
 
-                <!-- North-West -->
-                <polygon points="-22,-22 -5,-15 -15,-5" data-aspect="nw" class="roseDirection"></polygon>
-                <text x="-30" y="-30" text-anchor="middle">NW</text>
-              </svg>
-            </div>
-          </calcite-label>
-          <calcite-label scale="s">
-            Color
-            <calcite-popover reference-element="colorButton" closable>
-              <calcite-color-picker id="colorPicker" format="rgb" closable></calcite-color-picker>
-            </calcite-popover>
-            <button id="colorButton"></button>
-          </calcite-label>
+                  <!-- West -->
+                  <polygon points="-40,0 -15,-5 -15,5" data-aspect="w" class="roseDirection"></polygon>
+                  <text x="-45" y="2" text-anchor="middle">W</text>
+
+                  <!-- North-West -->
+                  <polygon points="-22,-22 -5,-15 -15,-5" data-aspect="nw" class="roseDirection"></polygon>
+                  <text x="-30" y="-30" text-anchor="middle">NW</text>
+                </svg>
+              </div>
+            </calcite-label>
+            <calcite-label scale="s">
+              Color
+              <calcite-popover reference-element="colorButton" closable>
+                <calcite-color-picker id="colorPicker" format="rgb" closable></calcite-color-picker>
+              </calcite-popover>
+              <button id="colorButton"></button>
+            </calcite-label>
+          </div>
         </div>
-      </div>
-    </arcgis-placement>
-  </arcgis-scene>
-
+      </arcgis-placement>
+    </arcgis-scene>
+ 
   <script type="module">
     const [RasterFunction, rasterFunctionUtils, ImageryTileLayer] = await $arcgis.import([
       "@arcgis/core/layers/support/RasterFunction.js",
@@ -139,21 +145,21 @@
     // Remap slope values (degrees) to categorical ranges
     const remapSlope = rasterFunctionUtils.remap({
       rangeMaps: [{
-          range: [30, 35],
-          output: 30
-        },
-        {
-          range: [35, 40],
-          output: 35
-        },
-        {
-          range: [40, 45],
-          output: 40
-        },
-        {
-          range: [45, 90],
-          output: 45
-        },
+        range: [30, 35],
+        output: 30
+      },
+      {
+        range: [35, 40],
+        output: 35
+      },
+      {
+        range: [40, 45],
+        output: 40
+      },
+      {
+        range: [45, 90],
+        output: 45
+      },
       ],
       outputPixelType: "u8",
       raster: slope,
@@ -217,49 +223,49 @@
       // Map aspect as 1 (include) or 0 (exclude) according to parameters
       const remapAspectFunction = rasterFunctionUtils.remap({
         rangeMaps: [{
-            range: [-Infinity, 0],
-            output: 1
-          }, // Include flats
-          {
-            range: [360, Infinity],
-            output: 1
-          }, // Include flats
-          {
-            range: [337.5, 360],
-            output: +customAnalysisParams.aspects.N
-          },
-          {
-            range: [0, 22.5],
-            output: +customAnalysisParams.aspects.N
-          },
-          {
-            range: [22.5, 67.5],
-            output: +customAnalysisParams.aspects.NE
-          },
-          {
-            range: [67.5, 112.5],
-            output: +customAnalysisParams.aspects.E
-          },
-          {
-            range: [112.5, 157.5],
-            output: +customAnalysisParams.aspects.SE
-          },
-          {
-            range: [157.5, 202.5],
-            output: +customAnalysisParams.aspects.S
-          },
-          {
-            range: [202.5, 247.5],
-            output: +customAnalysisParams.aspects.SW
-          },
-          {
-            range: [247.5, 292.5],
-            output: +customAnalysisParams.aspects.W
-          },
-          {
-            range: [292.5, 337.5],
-            output: +customAnalysisParams.aspects.NW
-          },
+          range: [-Infinity, 0],
+          output: 1
+        }, // Include flats
+        {
+          range: [360, Infinity],
+          output: 1
+        }, // Include flats
+        {
+          range: [337.5, 360],
+          output: +customAnalysisParams.aspects.N
+        },
+        {
+          range: [0, 22.5],
+          output: +customAnalysisParams.aspects.N
+        },
+        {
+          range: [22.5, 67.5],
+          output: +customAnalysisParams.aspects.NE
+        },
+        {
+          range: [67.5, 112.5],
+          output: +customAnalysisParams.aspects.E
+        },
+        {
+          range: [112.5, 157.5],
+          output: +customAnalysisParams.aspects.SE
+        },
+        {
+          range: [157.5, 202.5],
+          output: +customAnalysisParams.aspects.S
+        },
+        {
+          range: [202.5, 247.5],
+          output: +customAnalysisParams.aspects.SW
+        },
+        {
+          range: [247.5, 292.5],
+          output: +customAnalysisParams.aspects.W
+        },
+        {
+          range: [292.5, 337.5],
+          output: +customAnalysisParams.aspects.NW
+        },
         ],
         raster: aspectFunction,
       });

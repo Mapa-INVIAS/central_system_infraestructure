@@ -4,7 +4,9 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
-    
+    #########################################################
+    #==============   Interfaces de acceso  ================#
+    #########################################################
     path("", views.sk_login, name="db_login"),
     path("logout/", views.sk_logout, name="db_logout"),
     #########################################################
@@ -23,14 +25,27 @@ urlpatterns = [
     #########################################################
     #==============   Interfaces de modelo  ================#
     #########################################################
-    path('usuario/nuevomapa/', views.posprocess_actions, name="posprocess_actions"),
+    path('usuario/modelo/', views.process_actions, name="process_actions"),
     path('maxent/run/', views.model_maxent, name="ejecutar_maxent"),
-    ###################### INTERFAZ ########################
+    #########################################################
+    #============   Interfaces de posproceso  ==============#
+    #########################################################
+    path('usuario/nuevomapa/', views.generate_map, name="postprocess_actions"),
+    path('generatemap/run/', views.run_generateMap, name="generate_map"),
+    path("tiff-geo/<str:project_name>/", views.tiff_geo, name="tiff_geo"),
+    #########################################################
+    #=============   Interfaces de descarga  ===============#
+    #########################################################
+
+
+    ###################### INTERFACES ########################
+
+    ####################### ACCIONES #########################
 
     
     # ==================== MAXENT model ================== #
     path('ejecutar/', views.ejecutar_proceso),
-    path("tiff-geo/<str:project_name>/", views.tiff_geo, name="tiff_geo"),
+  
 
     
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

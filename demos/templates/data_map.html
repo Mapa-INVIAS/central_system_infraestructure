@@ -1,0 +1,15 @@
+{% extends 'index.html' %}
+
+{% block content %}
+
+<section>
+    <form action="{% url 'generate_map' %}" method="post">
+        <p><a class="logoutbtn" href="{% url 'db_logout' %}">Cerrar cesión</a></p>
+        {% csrf_token %}
+        <h1>Interface para lanzar la generación del nuevo Mapa de Vulnerabilidad Faunística</h1>
+        <input type="submit" value="Generar mapa">
+    </form>
+
+</section>
+
+{% endblock %}

@@ -19,9 +19,9 @@ class SukubunData(models.Model):
     file = models.FileField(upload_to=sukubun_path, storage=OverwriteStorage())
     note = models.CharField(max_length=500)
     create_at = models.DateField(auto_now_add=True)
-    update_at = models.DateField(auto_now_add=True)
+    update_at = models.DateField(auto_now=True)
 
 
     def __str__(self):
-        return f"{self.file} - {self.note} - {self.create_at}"
+        return f"{self.file} - {self.note} - {self.update_at}"
      

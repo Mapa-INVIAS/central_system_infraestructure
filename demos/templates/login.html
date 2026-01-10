@@ -1,13 +1,8 @@
 {% extends 'index.html' %}
 {% block title %}: Ingreso{% endblock %}
-{% block content %}
-
 <!-- Header content -->
-<header>
-    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/INV%C3%8DAS_Colombia_logo.png/1200px-INV%C3%8DAS_Colombia_logo.png"
-        alt="Logo">
-    <h1>INVIASVIVO{% block header %}{% endblock %}</h1>
-</header>
+{% block header %}{% endblock %}
+{% block content %}
 
 <section>
     <form id="uploadForm" action="" method="post" enctype="multipart/form-data">

@@ -9,6 +9,7 @@ urlpatterns = [
     #########################################################
     path("", views.sk_login, name="db_login"),
     path("logout/", views.sk_logout, name="db_logout"),
+    path("menu", views.menu_auto, name="menu_automa"),
     #########################################################
     #==============   Interfaces de carga  =================#
     #########################################################

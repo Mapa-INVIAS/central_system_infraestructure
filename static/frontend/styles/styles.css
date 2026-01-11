@@ -98,6 +98,17 @@ section {
   background-color: #fff;
 }
 
+section.bg-login {
+  /* https://www.invias.gov.co/ambiental/innovacion.php */
+  --opacidad-negro: 0.4;
+    background-image: linear-gradient(rgba(0, 0, 0, var(--opacidad-negro)), 
+    rgba(0, 0, 0, var(--opacidad-negro))), 
+    url("../img/back_login.jpg"); /* https://www.invias.gov.co/ambiental/img/ban_pr.jpg */
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
 section.sukubun {
   display: grid;
   align-content: center;
@@ -151,6 +162,20 @@ a.logoutbtn {
   border: none;
   font-weight: 600;
   text-align: right;
+}
+
+a.logo-header {
+  display: contents;
+  border: 0;
+  transition: all 0.5s 0s ease, all 0.5s 0s ease;
+  -webkit-transition: all 0.5s 0s ease, all 0.5s 0s ease;
+  -moz-transition: all 0.5s 0s ease, all 0.5s 0s ease;
+  -o-transition: all 0.5s 0s ease, all 0.5s 0s ease;
+}
+
+a.logo-header:hover > img {
+  /* filter: opacity(0.7); */
+  transform: scale(1.2);
 }
 
 form input[type="submit"] {
@@ -248,4 +273,6 @@ td:first-child {
 td:nth-child(2) { 
   text-align: right; 
 }
+
+/* Landing page style */
 

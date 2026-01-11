@@ -7,21 +7,24 @@
     {% load static %}
     <link rel="icon" type="image/x-icon" href="{% static 'frontend/img/invias_sin_text.ico' %}">
     <link rel="stylesheet" href="{% static 'frontend/styles/styles.css' %}">
-    <title>Demos {% block title %}{% endblock %}</title>
+    <title>INVIASVIVO {% block title %}{% endblock %}</title>
 </head>
 
 <body>
-    <header>
+    {% url 'db_login' as login_user %}
+    <header {% if request.path == login_user %}style="text-align: left; color: #ff8300;"{% endif %}>
         <!-- Header content -->
-        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/INV%C3%8DAS_Colombia_logo.png/1200px-INV%C3%8DAS_Colombia_logo.png"
+        <a class="logo-header" href="{% url 'landing' %}">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/INV%C3%8DAS_Colombia_logo.png/1200px-INV%C3%8DAS_Colombia_logo.png"
             alt="Logo">
+        </a>
         <h1>INVIASVIVO{% block header %}{% endblock %}</h1>
     </header>
     {% block content %}
     <!-- Content -->
 
     {% endblock %}
-    <footer>
+    <footer {% if request.path == login_user %}style="display: none;"{% endif %}>
         <p>&copy; {% now 'Y' %} INVIASVIVO - Todos los derechos reservados</p>
     </footer>
     <script src="{% static 'frontend/scripts/script.js' %}"></script>

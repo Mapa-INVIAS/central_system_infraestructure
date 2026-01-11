@@ -39,7 +39,7 @@ def gee_pipeline(body: dict, MAX_CONCURRENT, PERIOD_AVERAGE):
     )
 
     # 3.
-    exports_result = download_latest_exports()
+    exports_result = download_latest_exports(exports_dir)
     
     # 4.
     exports_dir = Path(settings.MEDIA_ROOT) / "EXPORTS"

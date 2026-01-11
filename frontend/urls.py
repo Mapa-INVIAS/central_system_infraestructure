@@ -6,6 +6,7 @@ from . import views
 
 
 urlpatterns = [
+    path('', views.landinPage, name="landing"),
     path('map', views.mapInterface, name='map'),
     
 ]

@@ -25,7 +25,7 @@ from django.views.decorators.http import require_POST
 from rpy2.robjects import default_converter
 from rpy2.robjects.conversion import localconverter
 #################################################################
-from .utils.maxentModel02 import MaxEntWorkflow
+from .utils.model.maxentModel02 import MaxEntWorkflow
 from .utils.parallelServices import pipeline_process
 from .utils.googleServices import gee_pipeline
 from .utils.control import set_stop_pipeline
@@ -108,6 +108,11 @@ def sk_login(request):
 def sk_logout(request):
     logout(request)
     return redirect('db_login')
+
+# Menu INVIASVIVO
+
+def menu_auto(request):
+    return render(request, 'menu.html')
 
 ###########################################################################
 # ======================================================================= #

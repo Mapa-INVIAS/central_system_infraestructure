@@ -1,0 +1,64 @@
+{% load static %}
+<!-- ================= HEADER / NAV ================= -->
+<header class="header">
+  <nav class="nav">
+    <div class="nav-container">
+
+      <!-- BOTÓN HAMBURGUESA -->
+      <button class="nav-toggle" aria-label="Abrir menú">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+
+      <!-- LOGO -->
+      <div class="nav-logo">
+        <img src="{% static 'frontend/img/logoinvias.png' %}" alt="INVÍAS">
+      </div>
+
+      <!-- MENU DESKTOP -->
+      <ul class="nav-group desktop-menu">
+        <li><a href="#inicio">Inicio</a></li>
+        <li><a href="#seccion-fauna">Impacto</a></li>
+        <li><a href="#seccion-roadmap">Roadmap</a></li>
+        <li><a href="#section-aliados">Aliados</a></li>
+        <li><a href="#section-cta">App</a></li>
+        {% if user.is_authenticated %}
+          <li><a href="{% url 'menu_automa' %}">Menu</a></li>
+          <li><a href="{% url 'db_logout' %}">Cerrar</a></li>
+        {% else %}
+          <li><a href="{% url 'db_login' %}">Ingresar</a></li>
+        {% endif %}
+      </ul>
+
+    </div>
+  </nav>
+
+  <!-- MENU MOBILE -->
+  <div class="mobile-menu">
+
+    <button class="mobile-close" aria-label="Cerrar menú">✕</button>
+
+    <div class="mobile-logo">
+      <img src="{% static 'frontend/img/logoinvias.png' %}" alt="INVÍAS">
+    </div>
+
+    <nav class="mobile-nav">
+      <a href="#inicio">Inicio</a>
+      <a href="#seccion-fauna">Impacto</a>
+      <a href="#seccion-roadmap">Roadmap</a>
+      <a href="#section-aliados">Aliados</a>
+      <a href="#seccion-cta">App</a>
+      <a href="#seccion-cta">App</a>
+      <a href="#seccion-cta">App</a>
+      {% if user.is_authenticated %}
+        <a href="{% url 'menu_automa' %}"></a>
+        <a href="{% url 'db_logout' %}">Cerrar</a>
+      {% else %}
+        <a href="{% url 'db_login' %}">Ingresar</a>
+      {% endif %}
+    </nav>
+
+  </div>
+
+</header>

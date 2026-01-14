@@ -342,29 +342,29 @@ class RecortePorRegion:
 # ======================================================
 # EJECUCIÓN
 # ======================================================
-if __name__ == "__main__":
+# if __name__ == "__main__":
 
-    CARPETA_RASTERS_TIF = r"D:/Downloads/juanDavid_Sukubun/out2_kr/capas/E_Alineadas"  # Rasteres ya alineados
-    VIAS_VECTOR_PATH = r"D:/Downloads/juanDavid_Sukubun/Vias_Total.shp" # capa de vias original de INVIAS
-    REGIONES_SHP_PATH = r"D:/Downloads/regiones/regiones.shp" # capa deregiones geográficas
-    CSV_ATROPELLAMIENTOS_PATH = r"D:/Downloads/juanDavid_Sukubun/out2_kr/hotspots.csv" # .csv de hotspot sacados desde el K-ripley
+#     CARPETA_RASTERS_TIF = r"D:/Downloads/juanDavid_Sukubun/out2_kr/capas/E_Alineadas"  # Rasteres ya alineados
+#     VIAS_VECTOR_PATH = r"D:/Downloads/juanDavid_Sukubun/Vias_Total.shp" # capa de vias original de INVIAS
+#     REGIONES_SHP_PATH = r"D:/Downloads/regiones/regiones.shp" # capa deregiones geográficas
+#     CSV_ATROPELLAMIENTOS_PATH = r"D:/Downloads/juanDavid_Sukubun/out2_kr/hotspots.csv" # .csv de hotspot sacados desde el K-ripley
 
-    CARPETA_SALIDA = r"D:/Downloads/juanDavid_Sukubun/salida_Clip"
+#     CARPETA_SALIDA = r"D:/Downloads/juanDavid_Sukubun/salida_Clip"
 
-    CAMPO_REGION = "REGION" # campo de la capa de regiones
-    BUFFER_M = 200.0 # este buffer se usa para que existaq un área de guarda 
+#     CAMPO_REGION = "REGION" # campo de la capa de regiones
+#     BUFFER_M = 200.0 # este buffer se usa para que existaq un área de guarda 
 
-    CSV_LAT_COL = "Latitude"
-    CSV_LON_COL = "Longitude"
-    CSV_CRS_EPSG = 4326
+#     CSV_LAT_COL = "Latitude"
+#     CSV_LON_COL = "Longitude"
+#     CSV_CRS_EPSG = 4326
 
-    RecortePorRegion(CARPETA_RASTERS_TIF,
-                     VIAS_VECTOR_PATH,
-                     REGIONES_SHP_PATH,
-                     CSV_ATROPELLAMIENTOS_PATH,
-                     CARPETA_SALIDA,
-                     CAMPO_REGION,
-                     BUFFER_M,
-                     CSV_LAT_COL,
-                     CSV_LON_COL,
-                     CSV_CRS_EPSG)
+#     RecortePorRegion(CARPETA_RASTERS_TIF,
+#                      VIAS_VECTOR_PATH,
+#                      REGIONES_SHP_PATH,
+#                      CSV_ATROPELLAMIENTOS_PATH,
+#                      CARPETA_SALIDA,
+#                      CAMPO_REGION,
+#                      BUFFER_M,
+#                      CSV_LAT_COL,
+#                      CSV_LON_COL,
+#                      CSV_CRS_EPSG)

@@ -1694,7 +1694,7 @@ tbody tr:nth-child(even) {
 
 .cta-map {
   background: #fff;
-  border-radius: 24px;
+  border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 30px 70px rgba(0,0,0,0.35);
   height: 750px;

@@ -1,9 +1,73 @@
 {% extends 'index.html' %}
-
+<!-- Header content -->
+ {% block header %}: MENU MÓDULOS {% endblock %}
 {% block content %}
 
-<section>
-    hola menu
+<section class="menu-invivo">
+
+    <ul class="cards">
+        <li class="cards__item">
+            <div class="card">
+                <div class="card__image card__image--upload"></div>
+                <div class="card__content">
+                    <div class="card__title">Módulo de carga</div>
+                    <p class="card__text"><span class="span-title">Módulo de carga o generación de insumos y/o elementos.</span></b> Para para dar inicio al proceso de desarrollo de nueva versión del mapa de Vulnerabilidad Faunística de Colombia ingrese al sitio, seleccione los parámetros deseados y ejecute.</p>
+                    <div class="btn--block">
+                        <a href="#" class="btn card__btn">Entrar</a>
+                    </div>
+                </div>
+            </div>
+        </li>
+        <li class="cards__item">
+            <div class="card">
+                <div class="card__image card__image--services"></div>
+                <div class="card__content">
+                    <div class="card__title">Módulo de servicios</div>
+                    <p class="card__text"><span class="span-title">Módulo de consumo de servicios paralelos y adquisión de insumos y recursos de preprocesamiento.</span></b> Para dar inicio al proceso de descarga de insumos y consumo de API's, ingrese al sitio y ejecute el proceso.</p>
+                    <div class="btn--block">
+                        <a href="#" class="btn card__btn">Entrar</a>
+                    </div>
+                </div>
+            </div>
+        </li>
+        <li class="cards__item">
+            <div class="card">
+                <div class="card__image card__image--model"></div>
+                <div class="card__content">
+                    <div class="card__title">Módulo MAXENT</div>
+                    <p class="card__text"><span class="span-title">Módulo de procesamiento de información y ejecución de modelo MAXENT.</span></b> Para activar el modelo de procesamiento de información y ejecutar el modelo MAXENT, ingrese al sitio y ejecute el proceso.</p>
+                    <div class="btn--block">
+                        <a href="#" class="btn card__btn">Entrar</a>
+                    </div>
+                </div>
+            </div>
+        </li>
+        <li class="cards__item">
+            <div class="card">
+                <div class="card__image card__image--products"></div>
+                <div class="card__content">
+                    <div class="card__title">Módulo productos</div>
+                    <p class="card__text"><span class="span-title">Módulo de generación de productos y/o nuevo mapa de vulnerabilidad Faunística.</span></b> Para activar el modelo de posprocesamiento de información y ejecutar el modelo de generación de capas y niveles, ingrese al sitio y ejecute el proceso.</p>
+                    <div class="btn--block">
+                        <a href="#" class="btn card__btn">Entrar</a>
+                    </div>
+                </div>
+            </div>
+        </li>
+        <li class="cards__item">
+            <div class="card">
+                <div class="card__image card__image--download"></div>
+                <div class="card__content">
+                    <div class="card__title">Módulo de descarga</div>
+                    <p class="card__text"><span class="span-title">Módulo de generación de descarga y/o nuevo mapa de vulnerabilidad Faunística.</span></b> Para realizar la descarga de la información generada a ser publicada, ingrese al sitio y descargue la información procesada.</p>
+                    <div class="btn--block">
+                        <a href="#" class="btn card__btn">Entrar</a>
+                    </div>
+                </div>
+            </div>
+        </li>
+    </ul>
+
 </section>
 
 {% endblock %}

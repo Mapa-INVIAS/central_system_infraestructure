@@ -560,38 +560,8 @@ def mosaic_srtm(latest_folder: Path):
 
 
 # =========================
-# MAIN
+# ENTRYPOINTS
 # =========================
-# def main():
-#     if not EXPORTS_DIR.exists():
-#         raise FileNotFoundError(f"No existe carpeta exportGCS: {EXPORTS_DIR}")
-
-#     OUT_ROOT.mkdir(parents=True, exist_ok=True)
-#     OUT_S2.mkdir(parents=True, exist_ok=True)
-#     OUT_HANSEN.mkdir(parents=True, exist_ok=True)
-#     OUT_SRTM.mkdir(parents=True, exist_ok=True)
-
-#     s2_latest = find_latest_s2_folder(EXPORTS_DIR)
-#     hansen_latest = find_latest_hansen_folder(EXPORTS_DIR)
-#     srtm_latest = find_latest_srtm_folder(EXPORTS_DIR)
-
-#     print("\n====================")
-#     print("CARPETAS MÁS RECIENTES")
-#     print("====================")
-#     print(f"S2     : {s2_latest}")
-#     print(f"HANSEN : {hansen_latest}")
-#     print(f"SRTM   : {srtm_latest}\n")
-
-#     mosaic_s2(s2_latest)
-#     mosaic_hansen(hansen_latest)
-#     mosaic_srtm(srtm_latest)
-
-#     print("\n[OK] TODO TERMINADO.")
-#     print(f"Salida en: {OUT_ROOT}")
-
-
-# if __name__ == "__main__":
-#     main()
 
 def full_mosaic_nacional(exports_dir: Path, run_s2=True, run_hansen=True, run_srtm=True):
     if not exports_dir.exists():

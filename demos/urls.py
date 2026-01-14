@@ -27,7 +27,8 @@ urlpatterns = [
     #==============   Interfaces de modelo  ================#
     #########################################################
     path('usuario/modelo/', views.process_actions, name="process_actions"),
-    path('maxent/run/', views.model_maxent, name="ejecutar_maxent"),
+    # path('maxent/run/', views.model_maxent, name="ejecutar_maxent"),
+    path('central/process', views.run_centralModelProcess, name="run_centralprocess"),
     #########################################################
     #============   Interfaces de posproceso  ==============#
     #########################################################
@@ -37,7 +38,6 @@ urlpatterns = [
     #########################################################
     #=============   Interfaces de descarga  ===============#
     #########################################################
-
 
     ###################### INTERFACES ########################
 

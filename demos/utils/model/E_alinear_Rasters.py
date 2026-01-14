@@ -8,7 +8,6 @@ from tqdm import tqdm
 from scipy.ndimage import distance_transform_edt
 import shutil
 
-
 # ------------------------------------------------------------
 # SILENCIAR TODO
 warnings.filterwarnings("ignore")
@@ -243,16 +242,16 @@ class AlinearRastersSparsePorReferencia:
 
 # ------------------------------------------------------------
 # EJECUCIÓN
-if __name__ == "__main__":
+# if __name__ == "__main__":
 
-    CARPETA_ENTRADA   = r"D:/Documents/SCRIPTS/RECOSFA/Auto_INVIAS_2025/TodoColombia/Mapa_Prueba/a_Pacifico/rasterIN" # toos los rasters 
-    RASTER_REFERENCIA = r"D:/Documents/SCRIPTS/RECOSFA/Auto_INVIAS_2025/out/referencia/raster_IN/SM_DEM.tif" # DEM
-    CARPETA_SALIDA    = r"D:/Documents/SCRIPTS/RECOSFA/Auto_INVIAS_2025/out/E_Alineados/" # ubicar DEM en esta carpeta
+#     CARPETA_ENTRADA   = r"D:/Documents/SCRIPTS/RECOSFA/Auto_INVIAS_2025/TodoColombia/Mapa_Prueba/a_Pacifico/rasterIN" # toos los rasters 
+#     RASTER_REFERENCIA = r"D:/Documents/SCRIPTS/RECOSFA/Auto_INVIAS_2025/out/referencia/raster_IN/SM_DEM.tif" # DEM
+#     CARPETA_SALIDA    = r"D:/Documents/SCRIPTS/RECOSFA/Auto_INVIAS_2025/out/E_Alineados/" # ubicar DEM en esta carpeta
 
-    AlinearRastersSparsePorReferencia(
-        CARPETA_ENTRADA,
-        RASTER_REFERENCIA,
-        CARPETA_SALIDA,
-        valores_nodata_virtuales=(-9999, -99999, -32768),
-        nodata_warp=-9999.0
-    )
+#     AlinearRastersSparsePorReferencia(
+#         CARPETA_ENTRADA,
+#         RASTER_REFERENCIA,
+#         CARPETA_SALIDA,
+#         valores_nodata_virtuales=(-9999, -99999, -32768),
+#         nodata_warp=-9999.0
+#     )

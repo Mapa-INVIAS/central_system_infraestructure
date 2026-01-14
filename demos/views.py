@@ -110,7 +110,7 @@ def sk_logout(request):
     return redirect('db_login')
 
 # Menu INVIASVIVO
-
+@login_required(login_url='db_login', redirect_field_name=None)
 def menu_auto(request):
     return render(request, 'menu.html')
 
@@ -390,101 +390,116 @@ except ImportError:
 from rpy2.robjects import default_converter
 from rpy2.robjects.conversion import localconverter
 
+from .utils.centralProcess import centralModelProcess
 # @csrf_exempt
 @login_required(login_url='db_login', redirect_field_name=None)
 @require_POST
-def model_maxent(request):
-    """
-    Ejecuta MaxEnt para todas las regiones encontradas en MEDIA_ROOT/jackknife.
-    Cada carpeta = una región = una corrida de MaxEnt.
-    Uso: POST /demos/maxent/run_safe/
-    """
 
+# def model_maxent(request):
+
+#     if request.method != "POST":
+#         return HttpResponseNotAllowed(["POST"])
+
+#     try:
+#         jackknife_root = os.path.join(settings.MEDIA_ROOT, "jacknife")
+
+#         if not os.path.isdir(jackknife_root):
+#             error_message = (
+#                     f"❌ El sistema no encontro la carpeta jacknife verifique en \n\n" 
+#                     f"el sistema si existe.\n\n"
+#                     f"status=404"
+#                 )
+
+#             send_telegram_message(error_message)
+#             return JsonResponse(
+#                 {"status": "error", "message": "No existe la carpeta jacknife"},
+#                 status=404
+#             )
+
+#         # Detectar todas las regiones
+#         regiones = [
+#             d for d in os.listdir(jackknife_root)
+#             if os.path.isdir(os.path.join(jackknife_root, d))
+#         ]
+
+#         if not regiones:
+#             return JsonResponse(
+#                 {"status": "error", "message": "No hay regiones dentro de jacknife"},
+#                 status=400
+#             )
+
+#         resultados = {}
+
+#         # =============================== #
+#         # Ejecutar workflow SECUENCIAL    #
+#         # =============================== #
+#         for region in regiones:
+#             try:
+#                 workflow = MaxEntWorkflow(project_name=region)
+#                 # Garantizar contexto de rpy2 dentro del mismo thread
+#                 with localconverter(default_converter):
+#                     workflow.run()
+#                 resultados[region] = "OK"
+#             except Exception as e:
+
+#                 error_message = (
+#                     f"❌ Fallo el proceso de Maxent model. \n\n"
+#                     f"Error: {str(e)}"
+#                 )
+
+#                 send_telegram_message(error_message)
+
+#                 resultados[region] = f"ERROR: {str(e)}"
+
+#         # ------------------------------- # 
+#         #          Notificación           # 
+#         # ------------------------------- #
+
+#         enlace = reverse("process_actions")
+#         dominio = "http://127.0.0.1:8000"
+#         url_completa = f"{dominio}{enlace}"
+
+#         mensaje = ( 
+#             f"✅ El proceso MaxEnt finalizó.\n\n" 
+#             f"Regiones procesadas: {', '.join(regiones)}\n" 
+#             f"Resultados: {resultados}\n\n" 
+#             f"Dirijase a descargar los resultados en ({url_completa})" )
+        
+#         send_telegram_message(mensaje)
+
+#         return JsonResponse({
+#             "status": "ok",
+#             "regiones_procesadas": regiones,
+#             "resultados": resultados
+#         })
+
+#     except Exception as e:
+
+#         error_message = (
+#                     f"❌ Fallo el proceso de Maxent model. \n\n"
+#                     f"Error: {str(e)}"
+#                 )
+
+#         send_telegram_message(error_message)
+
+#         return JsonResponse({
+#             "status": "error",
+#             "message": str(e),
+#             "traceback": traceback.format_exc()
+#         }, status=500)
+
+
+def run_centralModelProcess(request):
     if request.method != "POST":
         return HttpResponseNotAllowed(["POST"])
-
+    
     try:
-        jackknife_root = os.path.join(settings.MEDIA_ROOT, "jacknife")
-
-        if not os.path.isdir(jackknife_root):
-            error_message = (
-                    f"❌ El sistema no encontro la carpeta jacknife verifique en \n\n" 
-                    f"el sistema si existe.\n\n"
-                    f"status=404"
-                )
-
-            send_telegram_message(error_message)
-            return JsonResponse(
-                {"status": "error", "message": "No existe la carpeta jacknife"},
-                status=404
-            )
-
-        # Detectar todas las regiones
-        regiones = [
-            d for d in os.listdir(jackknife_root)
-            if os.path.isdir(os.path.join(jackknife_root, d))
-        ]
-
-        if not regiones:
-            return JsonResponse(
-                {"status": "error", "message": "No hay regiones dentro de jacknife"},
-                status=400
-            )
-
-        resultados = {}
-
-        # =============================== #
-        # Ejecutar workflow SECUENCIAL    #
-        # =============================== #
-        for region in regiones:
-            try:
-                workflow = MaxEntWorkflow(project_name=region)
-                # Garantizar contexto de rpy2 dentro del mismo thread
-                with localconverter(default_converter):
-                    workflow.run()
-                resultados[region] = "OK"
-            except Exception as e:
-
-                error_message = (
-                    f"❌ Fallo el proceso de Maxent model. \n\n"
-                    f"Error: {str(e)}"
-                )
-
-                send_telegram_message(error_message)
-
-                resultados[region] = f"ERROR: {str(e)}"
-
-        # ------------------------------- # 
-        #          Notificación           # 
-        # ------------------------------- #
-
-        enlace = reverse("process_actions")
-        dominio = "http://127.0.0.1:8000"
-        url_completa = f"{dominio}{enlace}"
-
-        mensaje = ( 
-            f"✅ El proceso MaxEnt finalizó.\n\n" 
-            f"Regiones procesadas: {', '.join(regiones)}\n" 
-            f"Resultados: {resultados}\n\n" 
-            f"Dirijase a descargar los resultados en ({url_completa})" )
-        
-        send_telegram_message(mensaje)
-
+        centralModelProcess()
         return JsonResponse({
-            "status": "ok",
-            "regiones_procesadas": regiones,
-            "resultados": resultados
+            'status': 'se ejecuto maxent'
         })
-
+    
     except Exception as e:
-
-        error_message = (
-                    f"❌ Fallo el proceso de Maxent model. \n\n"
-                    f"Error: {str(e)}"
-                )
-
-        send_telegram_message(error_message)
-
         return JsonResponse({
             "status": "error",
             "message": str(e),
@@ -499,8 +514,6 @@ def model_maxent(request):
 #
 # ======================================================================= #
 ###########################################################################
-
-# ######## Funciones de preproceso
 
 from .utils.generateMap import PostProcesamientoMaxEnt
 

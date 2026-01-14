@@ -109,6 +109,155 @@ section.bg-login {
   background-repeat: no-repeat;
 }
 
+section.menu-invivo {
+  display: flex;
+  justify-content:center;
+  /* display: grid; */
+  /* grid-template-columns: repeat(2, 1fr); */
+  /* gap: 10px; */
+}
+
+section.menu-invivo > article {
+  /* width: 100%;
+  height: 80%;
+  margin: 0.5rem;
+  padding: 1rem;
+  border: 1px solid gray;
+  border-radius: 10px;
+  text-align: justify; */
+  display: flex;
+  flex-wrap: wrap;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+section.menu-invivo > article > figure {
+  margin: 0;
+}
+
+section.menu-invivo > article > figure > img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 12px 12px 0 0;
+  vertical-align: middle;
+}
+
+.span-title {
+  color: #003366;
+  cursor: pointer;
+}
+
+.span-title:hover {
+  color: #ff8300;
+}
+
+.cards {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+
+.card {
+  background-color: white;
+  border-radius: 0.25rem;
+  box-shadow: 0 20px 40px -14px rgba(0,0,0,0.25);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  &:hover {
+    .card__image {
+      filter: contrast(100%);
+    }
+  }
+}
+
+.card__content {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  padding: 1rem;
+}
+
+.card__image {
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  border-top-left-radius: 0.25rem;
+  border-top-right-radius: 0.25rem;
+  filter: contrast(70%);
+  overflow: hidden;
+  position: relative;
+  transition: filter 0.5s cubic-bezier(.43,.41,.22,.91);;
+  &::before {
+    content: "";
+	  display: block;
+    padding-top: 56.25%; 
+  }
+  @media(min-width: 40rem) {
+    &::before {
+      padding-top: 66.6%; 
+    }
+  }
+}
+
+.card__image--upload {
+  background-image: url(https://img.freepik.com/free-photo/data-backup-online-connection_53876-120060.jpg);
+}
+
+.card__image--services {
+  background-image: url(https://img.freepik.com/free-photo/standard-quality-control-collage-concept_23-2149595836.jpg);
+}
+
+.card__image--model {
+  background-image: url(https://img.freepik.com/free-photo/representation-user-experience-interface-design_23-2150169846.jpg);
+}
+
+.card__image--products {
+  background-image: url(https://img.freepik.com/free-photo/businessman-watching-financial-report-laptop_1262-3707.jpg);
+}
+
+.card__image--download {
+  background-image: url(https://img.freepik.com/free-photo/hand-tapping-tablet-with-map_23-2147732953.jpg);
+}
+
+.card__title {
+  color: gray;
+  font-size: 1.25rem;
+  font-weight: 300;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.card__text {
+  flex: 1 1 auto;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin-bottom: 1.25rem;
+}
+
+.btn--block {
+  display: flex;
+  width: 100%;
+  text-align: center;
+}
+
+.btn--block a {
+  text-decoration: none;
+  color: #000;
+}
+
+.btn--block a:hover {
+  background-color: #003366;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 600;
+}
+
 section.sukubun {
   display: grid;
   align-content: center;
@@ -274,5 +423,16 @@ td:nth-child(2) {
   text-align: right; 
 }
 
-/* Landing page style */
+/* Responsive */
+
+.cards__item {
+  display: flex;
+  padding: 1rem;
+  @media(min-width: 40rem) {
+    width: 50%;
+  }
+  @media(min-width: 56rem) {
+    width: 33.3333%;
+  }
+}
 

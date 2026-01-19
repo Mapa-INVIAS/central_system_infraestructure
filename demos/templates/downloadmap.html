@@ -1,33 +1,32 @@
 {% extends 'index.html' %}
+{% block header %}: DESCARGAR MAPA {% endblock %}
 
 {% block content %}
 
 <section>
-    <form action="{% url 'generate_map' %}" method="post">
+    <form action="GEt">
         <p><a class="logoutbtn" href="{% url 'db_logout' %}">Cerrar cesión</a></p>
+        <h1>Interface para descargar el nuevo Mapa de Vulnerabilidad Faunística</h1>
         <table>
             <thead>
                 <tr>
-                    <td>Nombre directorio</td>
-                    <td>Fecha de actualización</td>
-                    <td>Acción</td>
+                    <td>Nombre</td>
+                    <td>Fecha actualización</td>
+                    <td>Acciones</td>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td>caprpeta nombre</td>
+                    <td>Carpeta</td>
                     <td>11/12/2025</td>
                     <td>
+                        <button>Descargar</button>
                         <button>Ver contenido</button>
                     </td>
                 </tr>
             </tbody>
         </table>
-        {% csrf_token %}
-        <h1>Interface para lanzar la generación del nuevo Mapa de Vulnerabilidad Faunística</h1>
-        <input type="submit" value="Generar mapa">
     </form>
-
 </section>
 
 {% endblock %}

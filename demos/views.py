@@ -614,3 +614,6 @@ def process_actions(request):
 
 def generate_map(request):
     return render(request, 'data_map.html')
+
+def download_map(request):
+    return render(request, 'downloadmap.html')

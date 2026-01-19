@@ -4,8 +4,26 @@
 {% block content %}
 
 <section>
-    <form action="{% url 'ejecutar_maxent' %}" method="post">
+    <form action="{% url 'run_centralprocess' %}" method="post">
         <p><a class="logoutbtn" href="{% url 'db_logout' %}">Cerrar cesión</a></p>
+        <table>
+            <thead>
+                <tr>
+                    <td>Nombre directorio</td>
+                    <td>Fecha de actualización</td>
+                    <td>Acción</td>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>caprpeta nombre</td>
+                    <td>11/12/2025</td>
+                    <td>
+                        <button>Ver contenido</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
         {% csrf_token %}
         <h1>Interface para lanzar el modelo de procesamiento MAXENT</h1>
         <input type="submit" value="Procesar información">

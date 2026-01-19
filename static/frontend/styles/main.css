@@ -9,6 +9,7 @@
 :root {
   --azul: #0f2a4f;
   --azul-oscuro: #003366;
+  --azul-claro: #3a86fe;
   --naranja: #ff8a00;
   --verde: #4caf50;
   --blanco: #ffffff;
@@ -901,7 +902,7 @@ video:-webkit-full-screen {
 }
 
 .pipeline-block h3 {
-  color: #2e7d32;
+  color: var(--azul-claro);
   font-size: 20px;
   margin-bottom: 18px;
 }

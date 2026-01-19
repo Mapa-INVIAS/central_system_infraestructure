@@ -4,13 +4,14 @@
 {% block header %}: SERVICIOS PARALELOS{% endblock %}
 {% block content %}
 
+{% if file.update_at|date:"Y-m-d" == today|date:"Y-m-d" %}
 <section class="sukubun">
     <form id="uploadForm" action="{% url 'db_sukubun' %}" method="post" enctype="multipart/form-data">
         {% csrf_token %}
         <p><a class="logoutbtn" href="{% url 'db_logout' %}">Cerrar cesión</a></p>
         <!-- Sukubun upload fomulary -->
-         <h1>Ingrese el documento de SUKUBUN actualizado</h1>
-         <table>
+        <h1>Ingrese el documento de SUKUBUN actualizado</h1>
+        <table>
             <thead>
                 <tr>
                     <td>Nota registrada</td>
@@ -23,28 +24,55 @@
                     <td>{{ last_sukubun.update_at }}</td>
                 </tr>
             </tbody>
-         </table>
-         <input type="file" name="file" id="fileInput" >
-         <input type="text" name="note" id="noteInput" placeholder="Ingrese nota" >
-         <div class="content-buttons">
+        </table>
+        <input type="file" name="file" id="fileInput">
+        <input type="text" name="note" id="noteInput" placeholder="Ingrese nota">
+        <div class="content-buttons">
             <input type="submit" value="Almacenar archivo">
-         </div>
+        </div>
     </form>
 
     {% for file in sukubun %}
-       {% if file.update_at|date:"Y-m-d" == today|date:"Y-m-d" %}
-            <form action="{% url 'run_pipeline' %}" method="post">
-                <!-- Parallel process formulary -->
-                {% csrf_token %}
-                <h1>Interface para lanzar procesos de servicios paralelos</h1>
-                <div class="content-buttons">
-                    <input type="submit" value="Activar servicios paralelos">
-                    <a type="submit" class="button-stop" href="{% url 'stop_services' %}" onclick="return confirm('¿Está seguro de que desea detener los servicios?')">Detener servicios</a>
-                </div>
-            </form>
-        {% endif %}
+    <form action="{% url 'run_pipeline' %}" method="post">
+        <!-- Parallel process formulary -->
+        {% csrf_token %}
+        <h1>Interface para lanzar procesos de servicios paralelos</h1>
+        <div class="content-buttons">
+            <input type="submit" value="Activar servicios paralelos">
+            <a type="submit" class="button-stop" href="{% url 'stop_services' %}"
+                onclick="return confirm('¿Está seguro de que desea detener los servicios?')">Detener servicios</a>
+        </div>
+    </form>
     {% endfor %}
-   
 </section>
+{% else %}
+<section>
+    <form id="uploadForm" action="{% url 'db_sukubun' %}" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <p><a class="logoutbtn" href="{% url 'db_logout' %}">Cerrar cesión</a></p>
+        <!-- Sukubun upload fomulary -->
+        <h1>Ingrese el documento de SUKUBUN actualizado</h1>
+        <table>
+            <thead>
+                <tr>
+                    <td>Nota registrada</td>
+                    <td>Última actualización</td>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>{{ last_sukubun.note }}</td>
+                    <td>{{ last_sukubun.update_at }}</td>
+                </tr>
+            </tbody>
+        </table>
+        <input type="file" name="file" id="fileInput">
+        <input type="text" name="note" id="noteInput" placeholder="Ingrese nota">
+        <div class="content-buttons">
+            <input type="submit" value="Almacenar archivo">
+        </div>
+    </form>
+</section>
+{% endif %}
 
 {% endblock %}

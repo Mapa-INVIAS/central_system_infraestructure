@@ -39,8 +39,8 @@ class MaxEntWorkflow:
         self.project_name = project_name
 
         # Si no se pasan, usamos MEDIA_ROOT
-        self.input_basepath = input_basepath or os.path.join(settings.MEDIA_ROOT, "jacknife")
-        self.output_basepath = output_basepath or os.path.join(settings.MEDIA_ROOT, "maxent_invias")
+        self.input_basepath = input_basepath or os.path.join(settings.MEDIA_ROOT, 'modula_proceso', 'jacknife')
+        self.output_basepath = output_basepath or os.path.join(settings.MEDIA_ROOT, 'modula_proceso', 'maxent_invias')
 
         self.input_project_path = os.path.join(self.input_basepath, project_name)
         self.output_project_path = os.path.join(self.output_basepath, project_name)

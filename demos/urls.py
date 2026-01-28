@@ -38,16 +38,15 @@ urlpatterns = [
     #########################################################
     #=============   Interfaces de descarga  ===============#
     #########################################################
-    path('usuario/descarga-mapa', views.download_map, name="download_map"),
+    path('usuario/descarga-mapa', views.listdownload_map, name="listdownload_map"),
+    path('download/maps/<str:name_subdir>/', views.download_map, name="download_map"),
 
     ###################### INTERFACES ########################
 
     ####################### ACCIONES #########################
 
-    
     # ==================== MAXENT model ================== #
-    path('ejecutar/', views.ejecutar_proceso),
+    path('ejecutar/', views.ejecutar_proceso, name="ejecutar_proceso"),
   
 
-    
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

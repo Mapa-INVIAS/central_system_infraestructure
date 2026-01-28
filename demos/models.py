@@ -11,7 +11,7 @@ class OverwriteStorage(FileSystemStorage):
 
 def sukubun_path(instance, filename):
     ext = filename.split('.')[-1]
-    return f"uploads/sukubun.{ext}"
+    return f"modula_servicios/sukubun/sukubun.{ext}"
 
 # Create your models here.
 class SukubunData(models.Model):

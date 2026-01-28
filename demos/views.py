@@ -100,7 +100,7 @@ def sk_login(request):
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
-            return redirect('inputs_gee')
+            return redirect('menu_automa')
         else:
             messages.error(request, 'Credenciales inválidas')
     return render(request, "login.html")
@@ -113,6 +113,27 @@ def sk_logout(request):
 @login_required(login_url='db_login', redirect_field_name=None)
 def menu_auto(request):
     return render(request, 'menu.html')
+
+
+# ======================================================================= #
+#
+# SISTEMA DE NOTIFICACIONES
+#
+# ======================================================================= #
+###########################################################################
+
+@login_required(login_url='db_login', redirect_field_name=None)
+def safe_send_telegram(message: str):
+    try:
+        send_telegram_message(message)
+    except requests.exceptions.ConnectionError:
+        # Error específico de conexión
+        print("Error: conexión interrumpida al enviar mensaje a Telegram.")
+        return False
+    except Exception as e:
+        print(f"Error inesperado al enviar mensaje a Telegram: {e}")
+        return False
+    return True
 
 ###########################################################################
 # ======================================================================= #
@@ -168,7 +189,7 @@ def run_gee_pipeline(request):
         resultado = "Proceso terminado con éxito ✅"
         success_message = (
                 f"Pipeline ha finalizado con éxito: {resultado}\n\n"
-                f"[Enlace para continuar con el proceso](https://http://127.0.0.1:8000/demos/user/preprocess)" 
+                f"[Enlace para continuar con el proceso](https://http://127.0.0.1:8000/demos/usuario/preprocess)" 
             )
 
         send_telegram_message(success_message)
@@ -221,26 +242,12 @@ def stop_pipeline(request):
 ###########################################################################
 
 @login_required(login_url='db_login', redirect_field_name=None)
-def safe_send_telegram(message: str):
-    try:
-        send_telegram_message(message)
-    except requests.exceptions.ConnectionError:
-        # Error específico de conexión
-        print("Error: conexión interrumpida al enviar mensaje a Telegram.")
-        return False
-    except Exception as e:
-        print(f"Error inesperado al enviar mensaje a Telegram: {e}")
-        return False
-    return True
-
-
-@login_required(login_url='db_login', redirect_field_name=None)
 @csrf_exempt
 def run_pipeline(request):
     base_dir = Path(settings.BASE_DIR) / "static" / "backend" / "geodata"
     input_name = base_dir / "CapaReferencia" / "Colombia.geojson"
 
-    output_dir = Path(settings.MEDIA_ROOT) / "AutoINVIAS"
+    output_dir = Path(settings.MEDIA_ROOT, 'modula_servicios', 'autoINVIAS')
 
     if not input_name.exists():
         
@@ -259,7 +266,7 @@ def run_pipeline(request):
     # ============================================== #
 
     link = reverse("preprocess_actions")
-    domain = "http://127.0.0.1:8000"
+    domain = "http://127.0.0.1:8000/"
     full_url = f"{domain}{link}"
 
     try:
@@ -337,6 +344,7 @@ def stop_services(request):
 ###########################################################################
 
 # Sukubun database
+import os
 
 @login_required(login_url='db_login', redirect_field_name=None)
 def preprocess_actions(request):
@@ -345,8 +353,7 @@ def preprocess_actions(request):
     tomorrow = today + timedelta(days=1) 
     last_sukubun = SukubunData.objects.order_by("-update_at").first()
 
-    print('last sukubun')
-    print(last_sukubun)
+    
 
     sukubun_files = SukubunData.objects.all()
     return render(request, 'parallel_services.html', {
@@ -514,15 +521,16 @@ def run_centralModelProcess(request):
 #
 # ======================================================================= #
 ###########################################################################
-
 from .utils.generateMap import PostProcesamientoMaxEnt
 
 def run_generateMap(request):
 
+    today = date.today()
+
     base_dir = Path(settings.MEDIA_ROOT)
     # Directorios base
-    maxent_dir = base_dir / "maxent_invias"
-    jacknife_dir = base_dir / "jacknife"
+    maxent_dir = Path(base_dir, 'modula_proceso', 'maxent_invias')
+    jacknife_dir = Path(base_dir, 'modula_proceso', 'jacknife')
 
     # Lista de regiones
     regiones = ["a_Amazonas", "b_Orinoquia", "c_Pacifico", "d_Caribe", "e_Andina"]
@@ -543,7 +551,10 @@ def run_generateMap(request):
 
             ruta_raster_maxent = os.path.join(maxent_dir, region, "RasterResult", "resultado_maxent.tif")
             ruta_vias = os.path.join(jacknife_dir, region, "vias.shp")
-            carpeta_salida = os.path.join(base_dir,"nuevo_mapa", region)
+            # carpeta_salida = os.path.join(base_dir,"nuevo_mapa", region)
+            carpeta_salida = os.path.join(base_dir, 'modula_postproceso', region)
+            # carpeta_salida = Path(base_dir, 'modula_postproceso', f'nuevo_mapa_{today}', region)
+            # carpeta_salida.mkdir(parents=True, exist_ok=True)
 
             PostProcesamientoMaxEnt(
                 ruta_raster_maxent,
@@ -608,12 +619,53 @@ def tiff_geo(request, project_name):
 
 # User Visual interfaces
 
-
 def process_actions(request):
     return render(request, 'new_map.html')
 
 def generate_map(request):
     return render(request, 'data_map.html')
 
-def download_map(request):
-    return render(request, 'downloadmap.html')
+import os
+import shutil
+from django.http import FileResponse, Http404
+import datetime
+
+def listdownload_map(request):
+    media_root = Path(settings.MEDIA_ROOT, 'modula_postproceso')
+
+    submedia_directories    = []
+
+    for directory in os.listdir(media_root):
+        if not directory.strip():
+            continue
+        ruta = os.path.join(media_root, directory)
+        if os.path.isdir(ruta):
+            fecha_actualizada = datetime.datetime.fromtimestamp(os.path.getmtime(ruta))
+            contenido = os.listdir(ruta)
+            submedia_directories.append(
+                {
+                    'name': directory,
+                    'update': fecha_actualizada.strftime("%Y-%m-%d"),
+                    'uptime': fecha_actualizada.strftime("%H:%M:%S"),
+                    'upcontent': contenido
+                }
+            )
+
+    return render(request, 'downloadmap.html', {"submedia_directories": submedia_directories})
+
+
+def download_map(request, name_subdir):
+    media_root = Path(settings.MEDIA_ROOT, 'modula_postproceso')
+    ruta = os.path.join(media_root, name_subdir)
+
+    if not os.path.exists(ruta):
+        raise Http404(f'No existe el directorio {name_subdir}')
+    
+    zip_file = f"/tmp/{name_subdir}.zip" 
+    shutil.make_archive(zip_file.replace(".zip", ""), 'zip', ruta)
+    
+    return FileResponse(
+        open(zip_file, 'rb'),
+        as_attachment=True,
+        filename=f'{name_subdir}.zip'
+    )

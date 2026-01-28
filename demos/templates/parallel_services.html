@@ -4,9 +4,9 @@
 {% block header %}: SERVICIOS PARALELOS{% endblock %}
 {% block content %}
 
-{% if file.update_at|date:"Y-m-d" == today|date:"Y-m-d" %}
-<section class="sukubun">
-    <form id="uploadForm" action="{% url 'db_sukubun' %}" method="post" enctype="multipart/form-data">
+{% if last_sukubun.update_at|date:"Y-m-d" == today|date:"Y-m-d" %}
+<section class="sukubun" {% if last_sukubun.update_at|date:"Y-m-d" == today|date:"Y-m-d" %}style="display: block; widht: 100%;"{% endif %}>
+    <form id="uploadForm" {% if last_sukubun.update_at|date:"Y-m-d" == today|date:"Y-m-d" %}style="widht: 80%; margin: 1rem auto;"{% endif %} action="{% url 'db_sukubun' %}" method="post" enctype="multipart/form-data">
         {% csrf_token %}
         <p><a class="logoutbtn" href="{% url 'db_logout' %}">Cerrar cesión</a></p>
         <!-- Sukubun upload fomulary -->
@@ -23,6 +23,14 @@
                     <td>{{ last_sukubun.note }}</td>
                     <td>{{ last_sukubun.update_at }}</td>
                 </tr>
+                <!-- <tr>
+                    <td>Carpeta de resultados servicios</td>
+                    <td><button>Ver contenidos</button></td>
+                </tr>
+                <tr>
+                    <td>Carpeta resultados K-Ripley</td>
+                    <td><button>Ver contenidos</button></td>
+                </tr> -->
             </tbody>
         </table>
         <input type="file" name="file" id="fileInput">
@@ -33,7 +41,7 @@
     </form>
 
     {% for file in sukubun %}
-    <form action="{% url 'run_pipeline' %}" method="post">
+    <form {% if last_sukubun.update_at|date:"Y-m-d" == today|date:"Y-m-d" %}style="widht: 80%; margin: 1rem auto;"{% endif %} action="{% url 'run_pipeline' %}" method="post">
         <!-- Parallel process formulary -->
         {% csrf_token %}
         <h1>Interface para lanzar procesos de servicios paralelos</h1>

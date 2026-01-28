@@ -35,7 +35,7 @@ def centralModelProcess():
     REGIONES_SHP_PATH = media_root / "regiones/regiones.shp" # capa deregiones geográficas
     CSV_ATROPELLAMIENTOS_PATH = media_root / "out2_kr/hotspots.csv" # .csv de hotspot sacados desde el K-ripley
 
-    CARPETA_SALIDA = media_root / "salida_Clip"
+    CARPETA_SALIDA = Path(media_root, 'modula_proceso', 'salida_Clip')
 
     CAMPO_REGION = "REGION" # campo de la capa de regiones
     BUFFER_M = 200.0 # este buffer se usa para que existaq un área de guarda 
@@ -66,7 +66,7 @@ def centralModelProcess():
     from rpy2.robjects import default_converter
     from rpy2.robjects.conversion import localconverter
 
-    jackknife_root = os.path.join(settings.MEDIA_ROOT, "jacknife")
+    jackknife_root = os.path.join(settings.MEDIA_ROOT, 'modula_proceso', 'jacknife')
 
     if not os.path.isdir(jackknife_root):
         error_path = {"status": "error", "message": "No existe la carpeta jacknife"}

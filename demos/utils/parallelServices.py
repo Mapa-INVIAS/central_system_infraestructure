@@ -28,7 +28,7 @@ def pipeline_process(output_dir, input_name):
     # ETAPA K-Ripley
     # ============================
     media_root = Path(settings.MEDIA_ROOT)
-    uploads_folder = media_root / "SUKUBUN"
+    uploads_folder =  Path(media_root, 'modula_servicios', 'sukubun')
 
     excel_files = list(uploads_folder.glob("*.xlsx")) + list(uploads_folder.glob("*.xls"))
     if not excel_files:
@@ -64,7 +64,7 @@ def pipeline_process(output_dir, input_name):
     plot_png             = True
 
     run_id = uuid.uuid4().hex[:8]
-    output_folder = media_root / "kripley_runs" / run_id
+    output_folder = Path(media_root, 'modula_servicios') / "kripley_resultados" / run_id
     output_folder.mkdir(parents=True, exist_ok=True)
 
     export_csv_hotspots_name = "hotspots.csv"
@@ -95,18 +95,6 @@ def pipeline_process(output_dir, input_name):
         n_workers,
         max_hs_sample_points
     )
-
-    # return {
-    #     "status": "ok",
-    #     "run_id": run_id,
-    #     "output_folder": str(output_folder),
-    #     "outputs": {
-    #         "ripley": export_csv_ripley_name,
-    #         "hotspots": export_csv_hotspots_name,
-    #         "vias": export_shp_vias_name,
-    #         "metadata": "metadata.json"
-    #     }
-    # }
 
     # Configuración general
     CHUNK_INICIAL = 1000
@@ -176,7 +164,6 @@ def pipeline_process(output_dir, input_name):
     if should_stop_pipeline():
         return {"status": "stopped", "stage": "IDEAM"}
 
-
     # BAJAR servidor FTP IDEAM
     # configuración inicial IDEAM
     ANIO_MAX = 2030
@@ -197,7 +184,6 @@ def pipeline_process(output_dir, input_name):
     if should_stop_pipeline():
         return {"status": "stopped", "stage": "OSM"}
 
-
     # BAJAR OSM
     # configuración inicial OSM
     BBOX_COLOMBIA = (-4.2258, -81.7357, 13.3948, -66.8567)
@@ -213,11 +199,10 @@ def pipeline_process(output_dir, input_name):
                     "residential", 
                     "service"]
 
-
     # Ejecución bajar OSM
     overpass_url="https://overpass-api.de/api/interpreter"
     CARPETA_SALIDA = output_dir / "B_Vectoriales"
-    logfile=output_dir / "CARPETA_SALIDA" / "log_osm.txt"
+    logfile= Path(CARPETA_SALIDA) / "log_osm.txt"
     NOMBRE_SALIDA = "Vias.shp"
     DownloadOSMVias(CARPETA_SALIDA,
                     NOMBRE_SALIDA,
@@ -265,4 +250,16 @@ def pipeline_process(output_dir, input_name):
                         input_name,
                         CARPETA_SALIDA,
                         VALOR_FUENTE)
+    
+    # return {
+    #     "status": "ok",
+    #     "run_id": run_id,
+    #     "output_folder": str(output_folder),
+    #     "outputs": {
+    #         "ripley": export_csv_ripley_name,
+    #         "hotspots": export_csv_hotspots_name,
+    #         "vias": export_shp_vias_name,
+    #         "metadata": "metadata.json"
+    #     }
+    # }
     

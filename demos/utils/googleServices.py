@@ -1,3 +1,4 @@
+from .gee.generatebufferInvias import generar_buffer_invias
 from .gee.exportTiles import run_s2_export
 from .gee.downloadInputsMaxent import download_latest_exports
 from .gee.makeMosaicInputs import full_mosaic_nacional
@@ -15,22 +16,23 @@ def gee_pipeline(body: dict, MAX_CONCURRENT, PERIOD_AVERAGE):
     
     init_ee()
 
-    # 1.
-    try:
-        archivo_url = generar_buffer_invias()  # tu función devuelve la URL del shapefile
-        buffer_invias_result = {
-            "status": "ok",
-            "mensaje": "Shapefile INVIAS creado exitosamente",
-            "archivo": archivo_url
-        }
+    # 1. Sistema de creación de mascara del mapa de rutas
+    URL = "https://mapas2.igac.gov.co/server/rest/services/carto/carto100000colombia2019/MapServer"
+    DIRECTORIO_SALIDA = Path(settings.MEDIA_ROOT, 'modula_carga')
+    DIRECTORIO_SALIDA.mkdir(parents=True, exist_ok=True)
+    CARPETA_SALIDA =  Path(DIRECTORIO_SALIDA, 'vias_invias')
+    NOMBRE_SALIDA = 'vias_invias.shp'
 
-    except Exception as e:
-        buffer_invias_result = {
-            "status": "error",
-            "mensaje": str(e)
-        }
+    generar_bufferinvias = generar_buffer_invias(
+        url=URL,
+        carpeta_salida=CARPETA_SALIDA,
+        nombre_salida=NOMBRE_SALIDA,
+        buffer_m=200
+    )
 
-    # 2. 
+    generar_bufferinvias.ejecutar()
+
+    # 2. Carga de elementos en el contenedor en la nube
     s2_result = run_s2_export(
         limit_zones=body.get("limit_zones"),
         dry_run_tiles=body.get("dry_run_tiles"),
@@ -38,11 +40,11 @@ def gee_pipeline(body: dict, MAX_CONCURRENT, PERIOD_AVERAGE):
         PERIOD_AVERAGE=PERIOD_AVERAGE
     )
 
-    # 3.
-    exports_result = download_latest_exports(exports_dir)
+    # 3. Descarga de elementos del contenedor de la nube
+    exports_result = download_latest_exports()
     
-    # 4.
-    exports_dir = Path(settings.MEDIA_ROOT) / "EXPORTS"
+    # 4. Generación del mosaico de las capas
+    exports_dir = Path(DIRECTORIO_SALIDA, 'exportsCGS')
     mosaic_result = full_mosaic_nacional(
         exports_dir=exports_dir,
         run_s2=body.get("run_s2", True),
@@ -50,9 +52,8 @@ def gee_pipeline(body: dict, MAX_CONCURRENT, PERIOD_AVERAGE):
         run_srtm=body.get("run_srtm", True),
     )
 
-
     return {
-        "buffer_invias": buffer_invias_result,
+        "buffer_invias": generar_bufferinvias,
         "run_s2_export": s2_result,
         "download_exports": exports_result,
         "mosaic_nacional": mosaic_result,

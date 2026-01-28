@@ -17,10 +17,10 @@ from tqdm import tqdm
 # =========================
 # CONFIG
 # =========================
-WORKDIR = Path(settings.MEDIA_ROOT) / "MOSAICS"
-EXPORTS_DIR = WORKDIR / "EXPORTS"
+WORKDIR = Path(settings.MEDIA_ROOT, 'modula_carga')
+EXPORTS_DIR = WORKDIR / 'MOSAICS'
 
-OUT_ROOT = EXPORTS_DIR / "MOSAICS"
+OUT_ROOT = EXPORTS_DIR / 'EXPORTS'
 OUT_S2 = OUT_ROOT / "S2"
 OUT_HANSEN = OUT_ROOT / "HANSEN"
 OUT_SRTM = OUT_ROOT / "SRTM"

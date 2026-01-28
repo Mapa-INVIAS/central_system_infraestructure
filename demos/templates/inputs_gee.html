@@ -5,24 +5,24 @@
 {% block content %}
 
 <section>
-    <form action="{% url 'gee_pipeline_run' %}" method="post">
-        <p><a class="logoutbtn" href="{% url 'db_logout' %}">Cerrar cesión</a></p>
-        {% csrf_token %}
-        <h1>Interface para lanzar proceso generación de insumos</h1>
-        <label for="">Tareas simultaneas</label>
-        <input type="number" name="MAX_CONCURRENT" id="" value="3" min="1" max="5">
-        <label for="">Valor promedio</label>
-        <select name="PERIOD_AVERAGE">
-          <option value="annual">Anual</option>
-          <option value="semi-annual">Semestral</option>
-          <option value="quarterly">trimestral</option>
-        </select>
-        <div class="content-buttons">
-          <input type="submit" value="Generar insumos">
-          <a type="submit" class="button-stop" href="{% url 'stop_pipeline' %}" onclick="return confirm('¿Está seguro de que desea detener el proceso?')">Detener proceso</a>
-        </div>
-    </form>
-
+  <form id="gee_form" action="{% url 'gee_pipeline_run' %}" method="post">
+    <p><a class="logoutbtn" href="{% url 'db_logout' %}">Cerrar cesión</a></p>
+    {% csrf_token %}
+    <h1>Interface para lanzar proceso generación de insumos</h1>
+    <label for="">Tareas simultaneas</label>
+    <input type="number" name="MAX_CONCURRENT" id="task_number" value="3" step="1" min="1" max="5" required autofocus>
+    <label for="">Valor promedio</label>
+    <select name="PERIOD_AVERAGE">
+      <option value="annual">Anual</option>
+      <option value="semi-annual">Semestral</option>
+      <option value="quarterly">trimestral</option>
+    </select>
+    <div class="content-buttons">
+      <input type="submit" value="Generar insumos">
+      <a type="submit" class="button-stop" href="{% url 'stop_pipeline' %}"
+        onclick="return confirm('¿Está seguro de que desea detener el proceso?')">Detener proceso</a>
+    </div>
+  </form>
 </section>
 
 {% endblock %}

@@ -4,31 +4,43 @@
 {% block content %}
 
 <section>
-    <form action="{% url 'run_centralprocess' %}" method="post">
+    <article class="article-download">
         <p><a class="logoutbtn" href="{% url 'db_logout' %}">Cerrar cesión</a></p>
         <table>
             <thead>
                 <tr>
-                    <td>Nombre directorios</td>
-                    <td>Fecha de actualización</td>
-                    <td>Acción</td>
+                    <td>Jacknife directorios</td>
+                    <td colspan="2">Fecha de actualización</td>
                 </tr>
             </thead>
             <tbody>
-                <tr>
-                    <td>carpeta nombre</td>
-                    <td>11/12/2025</td>
-                    <td>
-                        <button>Ver contenido</button>
-                    </td>
-                </tr>
+                {% for submedia in subdirectories %}
+                    <tr>
+                        <td>{{ submedia.name }}</td>
+                        <td>{{ submedia.update }}</td>
+                        <td>{{ submedia.uptime }}</td>
+                    </tr>
+                {% endfor %}
             </tbody>
         </table>
-        {% csrf_token %}
         <h1>Interface para lanzar el modelo de procesamiento MAXENT</h1>
-        <input type="submit" value="Procesar información">
-    </form>
+        <form class="form-download" action="{% url 'run_centralprocess' %}" method="post">
+        {% csrf_token %}
+            <div class="content-buttons">
+                <input type="submit" value="Procesar información">
+                <a type="submit" class="button-stop" href="{% url 'stop_services' %}"
+                    onclick="return confirm('¿Está seguro de que desea detener los procesos?')">Detener proceso</a>
+            </div>
+        </form>
+    </article>
+</section>
 
+<section id="downloadModal" class="modal">
+    <div class="modal-content">
+        <span class="close">X</span>
+        <h3 id="modalTitle"></h3>
+        <ol id="modalList"></ol>
+    </div>
 </section>
 
 {% endblock %}

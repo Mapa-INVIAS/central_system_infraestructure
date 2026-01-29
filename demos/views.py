@@ -1,6 +1,9 @@
 import time, os, json, rasterio, traceback, ee, requests, json
 import geopandas as gpd
 import logging
+import os
+import shutil
+import datetime
 logger = logging.getLogger(__name__)
 ###############################################################
 from datetime import date, timedelta
@@ -11,7 +14,7 @@ from rasterio.features import shapes
 from .models import SukubunData
 ###############################################################
 from django.shortcuts import render, redirect
-from django.http import JsonResponse, FileResponse, HttpResponseNotAllowed, HttpResponse
+from django.http import JsonResponse, FileResponse, HttpResponseNotAllowed, HttpResponse, Http404
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
@@ -29,6 +32,7 @@ from .utils.model.maxentModel02 import MaxEntWorkflow
 from .utils.parallelServices import pipeline_process
 from .utils.googleServices import gee_pipeline
 from .utils.control import set_stop_pipeline
+from .utils.centralProcess import centralModelProcess
 
 ULR = settings.BOT_URL
 TOKEN = settings.BOT_TOKEN
@@ -349,18 +353,33 @@ import os
 @login_required(login_url='db_login', redirect_field_name=None)
 def preprocess_actions(request):
 
+    main_root = Path(settings.MEDIA_ROOT, 'modula_servicios')
+    subdirectories = []
+
+    for directory in os.listdir(main_root):
+        url = os.path.join(main_root, directory)
+        if os.path.isdir(url):
+            fecha_actualizada = datetime.datetime.fromtimestamp(os.path.getmtime(url))
+            subdirectories.append(
+                {
+                    'name': directory,
+                    'update': fecha_actualizada.strftime("%Y-%m-%d"),
+                    'uptime': fecha_actualizada.strftime("%H:%M:%S"),
+                }
+            )
+
     today = date.today() 
     tomorrow = today + timedelta(days=1) 
     last_sukubun = SukubunData.objects.order_by("-update_at").first()
 
     
-
     sukubun_files = SukubunData.objects.all()
     return render(request, 'parallel_services.html', {
         'sukubun': sukubun_files,
         'last_sukubun': last_sukubun,
         'today': today,
         'tomorrow': tomorrow,
+        'subdirectories': subdirectories,
         })
 
 
@@ -397,104 +416,10 @@ except ImportError:
 from rpy2.robjects import default_converter
 from rpy2.robjects.conversion import localconverter
 
-from .utils.centralProcess import centralModelProcess
+
 # @csrf_exempt
 @login_required(login_url='db_login', redirect_field_name=None)
 @require_POST
-
-# def model_maxent(request):
-
-#     if request.method != "POST":
-#         return HttpResponseNotAllowed(["POST"])
-
-#     try:
-#         jackknife_root = os.path.join(settings.MEDIA_ROOT, "jacknife")
-
-#         if not os.path.isdir(jackknife_root):
-#             error_message = (
-#                     f"❌ El sistema no encontro la carpeta jacknife verifique en \n\n" 
-#                     f"el sistema si existe.\n\n"
-#                     f"status=404"
-#                 )
-
-#             send_telegram_message(error_message)
-#             return JsonResponse(
-#                 {"status": "error", "message": "No existe la carpeta jacknife"},
-#                 status=404
-#             )
-
-#         # Detectar todas las regiones
-#         regiones = [
-#             d for d in os.listdir(jackknife_root)
-#             if os.path.isdir(os.path.join(jackknife_root, d))
-#         ]
-
-#         if not regiones:
-#             return JsonResponse(
-#                 {"status": "error", "message": "No hay regiones dentro de jacknife"},
-#                 status=400
-#             )
-
-#         resultados = {}
-
-#         # =============================== #
-#         # Ejecutar workflow SECUENCIAL    #
-#         # =============================== #
-#         for region in regiones:
-#             try:
-#                 workflow = MaxEntWorkflow(project_name=region)
-#                 # Garantizar contexto de rpy2 dentro del mismo thread
-#                 with localconverter(default_converter):
-#                     workflow.run()
-#                 resultados[region] = "OK"
-#             except Exception as e:
-
-#                 error_message = (
-#                     f"❌ Fallo el proceso de Maxent model. \n\n"
-#                     f"Error: {str(e)}"
-#                 )
-
-#                 send_telegram_message(error_message)
-
-#                 resultados[region] = f"ERROR: {str(e)}"
-
-#         # ------------------------------- # 
-#         #          Notificación           # 
-#         # ------------------------------- #
-
-#         enlace = reverse("process_actions")
-#         dominio = "http://127.0.0.1:8000"
-#         url_completa = f"{dominio}{enlace}"
-
-#         mensaje = ( 
-#             f"✅ El proceso MaxEnt finalizó.\n\n" 
-#             f"Regiones procesadas: {', '.join(regiones)}\n" 
-#             f"Resultados: {resultados}\n\n" 
-#             f"Dirijase a descargar los resultados en ({url_completa})" )
-        
-#         send_telegram_message(mensaje)
-
-#         return JsonResponse({
-#             "status": "ok",
-#             "regiones_procesadas": regiones,
-#             "resultados": resultados
-#         })
-
-#     except Exception as e:
-
-#         error_message = (
-#                     f"❌ Fallo el proceso de Maxent model. \n\n"
-#                     f"Error: {str(e)}"
-#                 )
-
-#         send_telegram_message(error_message)
-
-#         return JsonResponse({
-#             "status": "error",
-#             "message": str(e),
-#             "traceback": traceback.format_exc()
-#         }, status=500)
-
 
 def run_centralModelProcess(request):
     if request.method != "POST":
@@ -620,15 +545,47 @@ def tiff_geo(request, project_name):
 # User Visual interfaces
 
 def process_actions(request):
-    return render(request, 'new_map.html')
+
+    root_dir = Path(settings.MEDIA_ROOT, 'modula_proceso', 'jacknife')
+
+    subdirectories = []
+
+    for directory in os.listdir(root_dir):
+        ruta = os.path.join(root_dir, directory)
+        if os.path.isdir(ruta):
+            fecha_actual = datetime.datetime.fromtimestamp(os.path.getmtime(ruta))
+            subdirectories.append(
+                {
+                    'name': directory,
+                    'update': fecha_actual.strftime("%Y-%m-%d"),
+                    'uptime': fecha_actual.strftime("%H:%M:%S"),
+                }
+            )     
+
+    return render(request, 'new_map.html', {'subdirectories': subdirectories})
+
 
 def generate_map(request):
-    return render(request, 'data_map.html')
 
-import os
-import shutil
-from django.http import FileResponse, Http404
-import datetime
+    root_dir = Path(settings.MEDIA_ROOT, 'modula_proceso', 'maxent_invias')
+
+    subdirectories = []
+
+    for directory in os.listdir(root_dir):
+        ruta = os.path.join(root_dir, directory)
+        if os.path.isdir(ruta):
+            fecha_actual = datetime.datetime.fromtimestamp(os.path.getmtime(ruta))
+            subdirectories.append(
+                {
+                    'name': directory,
+                    'update': fecha_actual.strftime("%Y-%m-%d"),
+                    'uptime': fecha_actual.strftime("%H:%M:%S"),
+                }
+            )     
+
+    return render(request, 'data_map.html', {'subdirectories': subdirectories})
+
+
 
 def listdownload_map(request):
     media_root = Path(settings.MEDIA_ROOT, 'modula_postproceso')

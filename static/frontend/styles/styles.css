@@ -302,6 +302,12 @@ article.article-download {
   width: 80%;
 }
 
+.article-download h1 {
+  font-size: 1.0rem;
+  margin-bottom: 20px;
+  color: #34495e;
+}
+
 form.form-download {
     background: white;
     margin: 0;
@@ -524,3 +530,4 @@ tbody > tr > td:last-child {
 #modalList {
   padding: 0 4rem;
 }
+

@@ -9,19 +9,18 @@
         <table>
             <thead>
                 <tr>
-                    <td>Nombre directorio</td>
-                    <td>Fecha de actualización</td>
-                    <td>Acción</td>
+                    <td>Directorios resultado</td>
+                    <td colspan="2">Fecha de actualización</td>
                 </tr>
             </thead>
             <tbody>
-                <tr>
-                    <td>caprpeta nombre</td>
-                    <td>11/12/2025</td>
-                    <td>
-                        <button>Ver contenidos</button>
-                    </td>
-                </tr>
+                {% for submedia in subdirectories %}
+                    <tr>
+                        <td>{{ submedia.name }}</td>
+                        <td>{{ submedia.update }}</td>
+                        <td>{{ submedia.uptime }}</td>
+                    </tr>
+                {% endfor %}
             </tbody>
         </table>
         {% csrf_token %}

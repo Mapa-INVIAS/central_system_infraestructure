@@ -20,13 +20,13 @@ def centralModelProcess():
     RASTER_REFERENCIA = media_root / "out/referencia/raster_IN/SM_DEM.tif" # DEM
     CARPETA_SALIDA    = media_root / "out/E_Alineados/" # ubicar DEM en esta carpeta
 
-    AlinearRastersSparsePorReferencia(
-        CARPETA_ENTRADA,
-        RASTER_REFERENCIA,
-        CARPETA_SALIDA,
-        valores_nodata_virtuales=(-9999, -99999, -32768),
-        nodata_warp=-9999.0
-    )
+    # AlinearRastersSparsePorReferencia(
+    #     CARPETA_ENTRADA,
+    #     RASTER_REFERENCIA,
+    #     CARPETA_SALIDA,
+    #     valores_nodata_virtuales=(-9999, -99999, -32768),
+    #     nodata_warp=-9999.0
+    # )
 
     # Segmentar y generar Jacknife
 
@@ -44,16 +44,16 @@ def centralModelProcess():
     CSV_LON_COL = "Longitude"
     CSV_CRS_EPSG = 4326
 
-    RecortePorRegion(CARPETA_RASTERS_TIF,
-                     VIAS_VECTOR_PATH,
-                     REGIONES_SHP_PATH,
-                     CSV_ATROPELLAMIENTOS_PATH,
-                     CARPETA_SALIDA,
-                     CAMPO_REGION,
-                     BUFFER_M,
-                     CSV_LAT_COL,
-                     CSV_LON_COL,
-                     CSV_CRS_EPSG)
+    # RecortePorRegion(CARPETA_RASTERS_TIF,
+    #                  VIAS_VECTOR_PATH,
+    #                  REGIONES_SHP_PATH,
+    #                  CSV_ATROPELLAMIENTOS_PATH,
+    #                  CARPETA_SALIDA,
+    #                  CAMPO_REGION,
+    #                  BUFFER_M,
+    #                  CSV_LAT_COL,
+    #                  CSV_LON_COL,
+    #                  CSV_CRS_EPSG)
     
     # Ejecutar modelo MAXENT
 

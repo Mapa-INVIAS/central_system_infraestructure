@@ -31,23 +31,18 @@ document.addEventListener('DOMContentLoaded', function () {
         })();
     }
 
-
     if (btn) {
-        const modal = document.getElementById("downloadModal");
-        const modalTitle = document.getElementById("modalTitle");
-        const modalList = document.getElementById("modalList");
-        const span = modal.querySelector(".close");
 
         document.querySelectorAll(".btn-modal").forEach(btn => {
+
             btn.addEventListener("click", function () {
+
                 const dir = this.dataset.dir;
                 const update = this.dataset.update;
                 const uptime = this.dataset.uptime;
                 const files = this.dataset.files.split("|");
 
-               modalTitle.innerHTML = "<center><p class='titledir'>" + dir + "</p></center>" + " <br> Fecha actualización: " + update + " " + uptime;
-
-
+                modalTitle.innerHTML = "<center><p class='titledir'>" + dir + "</p></center>" + " <br> Fecha actualización: " + update + " " + uptime;
 
                 modalList.innerHTML = "";
                 files.forEach(file => {
@@ -58,7 +53,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 modal.style.display = "block";
                 modal.style.display = "flex";
+
+
             });
+            
         });
 
         span.addEventListener("click", function () {
@@ -73,5 +71,3 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
 });
-
-

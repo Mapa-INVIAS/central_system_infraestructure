@@ -58,22 +58,31 @@
     <form id="uploadForm" action="{% url 'db_sukubun' %}" method="post" enctype="multipart/form-data">
         {% csrf_token %}
         <p><a class="logoutbtn" href="{% url 'db_logout' %}">Cerrar cesión</a></p>
-        <!-- Sukubun upload fomulary -->
-        <h1>Ingrese el documento de SUKUBUN actualizado</h1>
         <table>
             <thead>
                 <tr>
-                    <td>Nota registrada</td>
-                    <td>Última actualización</td>
+                    <td colspan="2">Nota registrada/ Directorio</td>
+                    <td colspan="2">Última actualización</td>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td>{{ last_sukubun.note }}</td>
+                    <td>Sukubun</td>
+                    <td colspan="2">{{ last_sukubun.note }}</td>
                     <td>{{ last_sukubun.update_at }}</td>
                 </tr>
+                {% for submedia in subdirectories %}
+                    <tr>
+                        <td>Directorio {{ forloop.counter }}</td>
+                        <td>{{ submedia.name }}</td>
+                        <td>{{ submedia.update }}</td>
+                        <td>{{ submedia.uptime }}</td>
+                    </tr>
+                {% endfor %}
             </tbody>
         </table>
+        <!-- Sukubun upload fomulary -->
+        <h1>Ingrese el documento de SUKUBUN actualizado</h1>
         <input type="file" name="file" id="fileInput">
         <input type="text" name="note" id="noteInput" placeholder="Ingrese nota">
         <div class="content-buttons">

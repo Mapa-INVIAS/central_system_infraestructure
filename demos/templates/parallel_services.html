@@ -14,15 +14,23 @@
         <table>
             <thead>
                 <tr>
-                    <td>Nota registrada</td>
-                    <td>Última actualización</td>
+                    <td colspan="2">Nota registrada/ Directorio</td>
+                    <td colspan="2">Última actualización</td>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td>{{ last_sukubun.note }}</td>
-                    <td>{{ last_sukubun.update_at }}</td>
+                    <td colspan="3">{{ last_sukubun.note }}</td>
+                    <td colspan="2">{{ last_sukubun.update_at }}</td>
                 </tr>
+                {% for submedia in subdirectories %}
+                    <tr>
+                        <td>Directorio {{ forloop.counter }}</td>
+                        <td>{{ submedia.name }}</td>
+                        <td>{{ submedia.update }}</td>
+                        <td>{{ submedia.uptime }}</td>
+                    </tr>
+                {% endfor %}
                 <!-- <tr>
                     <td>Carpeta de resultados servicios</td>
                     <td><button>Ver contenidos</button></td>
@@ -69,7 +77,7 @@
                 <tr>
                     <td>Sukubun</td>
                     <td colspan="2">{{ last_sukubun.note }}</td>
-                    <td>{{ last_sukubun.update_at }}</td>
+                    <td colspan="2">{{ last_sukubun.update_at }}</td>
                 </tr>
                 {% for submedia in subdirectories %}
                     <tr>

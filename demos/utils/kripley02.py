@@ -7,10 +7,15 @@ import geopandas as gpd
 from tqdm import tqdm
 from shapely.geometry import Point, LineString, MultiLineString, MultiPoint
 from shapely.ops import unary_union, linemerge, nearest_points, split
+from shapely import set_precision
 
 import matplotlib.pyplot as plt
 from concurrent.futures import ProcessPoolExecutor, as_completed
 warnings.filterwarnings("ignore", category=UserWarning)
+
+# ======================================================
+# CLASE PRINCIPAL
+# ======================================================
 
 class KRipley_HS:
 
@@ -493,63 +498,168 @@ class KRipley_HS:
     # ==================================================
     # HOTSPOTS
     # ==================================================
-
     def hotspots_siriema_real_ci_4326(self,
-                                     cl_seg,
-                                     snapped,
-                                     r_opt_m,
-                                     hs_point_spacing_m,
-                                     hs_step_deg,
-                                     m_lat,
-                                     m_lon,
-                                     n_sim,
-                                     seed,
-                                     n_workers,
-                                     max_hs_sample_points):
+                                    cl_seg,
+                                    snapped,
+                                    r_opt_m,
+                                    hs_point_spacing_m,
+                                    hs_step_deg,
+                                    meters_per_deg_lat,
+                                    meters_per_deg_lon,
+                                    n_sim,
+                                    seed,
+                                    n_workers,
+                                    max_hs_sample_points):
 
-        r_deg = r_opt_m / m_lat
-        sample_pts = self.generar_puntos_muestreo_en_red_4326(cl_seg, hs_step_deg)
+        # --------------------------------------------------
+        # 1. Preparación
+        # --------------------------------------------------
+        r_deg = float(r_opt_m) / float(meters_per_deg_lat)
 
-        if max_hs_sample_points and len(sample_pts) > max_hs_sample_points:
-            sample_pts = sample_pts.sample(max_hs_sample_points, random_state=seed)
-
-        union_red = unary_union(cl_seg.geometry)
-
-        H_obs = self.calcular_H_con_Ci_4326(
-            sample_pts,
-            snapped.geometry,
-            union_red,
-            r_deg,
-            m_lat,
-            m_lon,
-            r_opt_m
+        sample_pts = self.generar_puntos_muestreo_en_red_4326(
+            cl_seg=cl_seg,
+            spacing_deg=float(hs_step_deg)
         )
 
-        H_sim = self.simular_H_con_Ci_4326(
-            sample_pts,
-            cl_seg,
-            union_red,
-            r_deg,
-            r_opt_m,
-            m_lat,
-            m_lon,
-            len(snapped),
-            n_sim,
-            seed,
-            n_workers
-        )
+        if max_hs_sample_points is not None and len(sample_pts) > max_hs_sample_points:
+            sample_pts = sample_pts.sample(
+                n=int(max_hs_sample_points),
+                random_state=int(seed)
+            ).reset_index(drop=True)
 
-        HS, UCL, LCL = self.calcular_HS_UCL_LCL(H_obs, H_sim)
+        # --------------------------------------------------
+        # 2. PRECOMPUTAR Ci UNA SOLA VEZ (CLAVE DEL SPEED-UP)
+        # --------------------------------------------------
+        # Para cada punto de muestreo:
+        #   Ci = longitud de red dentro del radio r*
+        #
+        # Se hace UNA vez, no en cada simulación
+
+        Ci_m = np.zeros(len(sample_pts), dtype=np.float32)
+
+        seg_sindex = cl_seg.sindex
+
+        for i, row in tqdm(sample_pts.iterrows(),
+                        total=len(sample_pts),
+                        desc="Precomputando Ci (una sola vez)"):
+
+            p = row.geometry
+            circle = p.buffer(r_deg)
+
+            # segmentos candidatos
+            cand = list(seg_sindex.query(circle))
+            if not cand:
+                Ci_m[i] = 0.0
+                continue
+
+            total_len = 0.0
+            for seg in cl_seg.iloc[cand].geometry:
+                inter = seg.intersection(circle)
+                if not inter.is_empty:
+                    total_len += self.longitud_geom_m_equivalente(
+                        inter,
+                        meters_per_deg_lat,
+                        meters_per_deg_lon
+                    )
+
+            Ci_m[i] = float(total_len)
+
+        # Evitar divisiones por cero
+        Ci_m[Ci_m <= 0] = np.nan
+
+        # --------------------------------------------------
+        # 3. H observado
+        # --------------------------------------------------
+        ev_gdf = gpd.GeoDataFrame(geometry=snapped.geometry, crs="EPSG:4326")
+        ev_sindex = ev_gdf.sindex
+
+        H_obs = np.zeros(len(sample_pts), dtype=np.float32)
+
+        for i, row in tqdm(sample_pts.iterrows(),
+                        total=len(sample_pts),
+                        desc="H observado"):
+
+            if np.isnan(Ci_m[i]):
+                H_obs[i] = 0.0
+                continue
+
+            p = row.geometry
+            circle = p.buffer(r_deg)
+
+            cand = list(ev_sindex.query(circle))
+            n_ev = ev_gdf.iloc[cand].geometry.within(circle).sum() if cand else 0
+
+            H_obs[i] = float(n_ev) * (2.0 * float(r_opt_m) / Ci_m[i])
+
+        # --------------------------------------------------
+        # 4. SIMULACIONES (SIN GEOMETRÍA PESADA)
+        # --------------------------------------------------
+        rng = np.random.default_rng(int(seed))
+
+        seg_offsets = cl_seg["offset_global_m"].values
+        seg_lengths = cl_seg["length_m"].values
+        geoms = cl_seg.geometry.values
+        breaks = seg_offsets + seg_lengths
+        D = float(breaks[-1])
+
+        H_sim = np.zeros((int(n_sim), len(sample_pts)), dtype=np.float32)
+
+        circles = [g.buffer(r_deg) for g in sample_pts.geometry]
+
+        for s in tqdm(range(int(n_sim)), desc="Simulaciones HS (rápidas)"):
+
+            # eventos simulados sobre la red
+            s_rand = rng.uniform(0.0, D, int(len(snapped)))
+            idx = np.searchsorted(breaks, s_rand, side="right")
+
+            sim_pts = []
+            for i_ev in range(len(idx)):
+                seg = idx[i_ev]
+                frac = (s_rand[i_ev] - seg_offsets[seg]) / seg_lengths[seg] if seg_lengths[seg] > 0 else 0.0
+                sim_pts.append(geoms[seg].interpolate(frac, normalized=True))
+
+            sim_gdf = gpd.GeoDataFrame(geometry=sim_pts, crs="EPSG:4326")
+            sim_sindex = sim_gdf.sindex
+
+            for i_pt, circle in enumerate(circles):
+                if np.isnan(Ci_m[i_pt]):
+                    H_sim[s, i_pt] = 0.0
+                    continue
+
+                cand = list(sim_sindex.query(circle))
+                n_ev = sim_gdf.iloc[cand].geometry.within(circle).sum() if cand else 0
+
+                H_sim[s, i_pt] = float(n_ev) * (2.0 * float(r_opt_m) / Ci_m[i_pt])
+
+        # --------------------------------------------------
+        # 5. UCL / LCL / HS
+        # --------------------------------------------------
+        H_mean = H_sim.mean(axis=0)
+        HS = H_obs - H_mean
+
+        H_sorted = np.sort(H_sim, axis=0)
+        lo_idx = int(max(0, math.floor(0.025 * (H_sim.shape[0] - 1))))
+        hi_idx = int(min(H_sim.shape[0] - 1, math.floor(0.975 * (H_sim.shape[0] - 1))))
+
+        LCL = H_sorted[lo_idx, :]
+        UCL = H_sorted[hi_idx, :]
+
         mask = HS > UCL
+        if mask.sum() == 0:
+            return pd.DataFrame(columns=["Latitude", "Longitude", "HS", "HS_Intense", "UCL", "LCL"])
 
-        gdf = sample_pts.loc[mask].copy()
-        gdf["HS"] = HS[mask]
-        gdf["UCL"] = UCL[mask]
-        gdf["LCL"] = LCL[mask]
-        gdf["Longitude"] = gdf.geometry.x
-        gdf["Latitude"] = gdf.geometry.y
+        out = sample_pts.loc[mask].copy()
+        out["HS"] = HS[mask]
+        out["HS_Intense"] = HS[mask]
+        out["UCL"] = UCL[mask]
+        out["LCL"] = LCL[mask]
+        out["Longitude"] = out.geometry.x
+        out["Latitude"] = out.geometry.y
 
-        return pd.DataFrame(gdf[["Latitude", "Longitude", "HS", "UCL", "LCL"]])
+        return pd.DataFrame(
+            out[["Latitude", "Longitude", "HS", "HS_Intense", "UCL", "LCL"]]
+        ).reset_index(drop=True)
+
 
     def generar_puntos_muestreo_en_red_4326(self, cl_seg, spacing_deg):
 
@@ -764,4 +874,4 @@ class KRipley_HS:
         hi = np.quantile(H_sim, 0.975, axis=0)
         return HS, hi, lo
 
-    pass
+

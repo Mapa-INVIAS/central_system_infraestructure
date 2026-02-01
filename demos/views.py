@@ -269,9 +269,9 @@ def run_pipeline(request):
     #                 Notificación                   #
     # ============================================== #
 
-    link = reverse("preprocess_actions")
-    domain = "http://127.0.0.1:8000/"
-    full_url = f"{domain}{link}"
+    # link = reverse("preprocess_actions")
+    # domain = "http://127.0.0.1:8000/"
+    # full_url = f"{domain}{link}"
 
     try:
         pipeline_process(output_dir, input_name)
@@ -280,7 +280,7 @@ def run_pipeline(request):
             f"Los servicios paralelos han culminado.\n\n"
             f"Se ha generado el jacknife. \n\n"
             f"De forma exitosa. \n\n"
-            f"Continue el proceso en ({full_url})"
+            # f"Continue el proceso en ({full_url})"
         )
 
         safe_send_telegram(message)

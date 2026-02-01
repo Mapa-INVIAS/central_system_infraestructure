@@ -16,26 +16,26 @@ def centralModelProcess():
     media_root = Path(settings.MEDIA_ROOT)
 
     # Alinear capas
-    CARPETA_ENTRADA   = media_root / "TodoColombia/Mapa_Prueba/a_Pacifico/rasterIN" # toos los rasters 
+    CARPETA_ENTRADA   = media_root / "TodoColombia/Mapa_Prueba/a_Pacifico/rasterIN" # toos los rasters colombia
     RASTER_REFERENCIA = media_root / "out/referencia/raster_IN/SM_DEM.tif" # DEM
     CARPETA_SALIDA    = media_root / "out/E_Alineados/" # ubicar DEM en esta carpeta
 
-    # AlinearRastersSparsePorReferencia(
-    #     CARPETA_ENTRADA,
-    #     RASTER_REFERENCIA,
-    #     CARPETA_SALIDA,
-    #     valores_nodata_virtuales=(-9999, -99999, -32768),
-    #     nodata_warp=-9999.0
-    # )
+    AlinearRastersSparsePorReferencia(
+        CARPETA_ENTRADA,
+        RASTER_REFERENCIA,
+        CARPETA_SALIDA,
+        valores_nodata_virtuales=(-9999, -99999, -32768),
+        nodata_warp=-9999.0
+    )
 
+    
     # Segmentar y generar Jacknife
-
-    CARPETA_RASTERS_TIF = media_root / "capas/E_Alineadas"  # Rasteres ya alineados
-    VIAS_VECTOR_PATH = media_root / "Vias_Total.shp" # capa de vias original de INVIAS
-    REGIONES_SHP_PATH = media_root / "regiones/regiones.shp" # capa deregiones geográficas
+    CARPETA_RASTERS_TIF = media_root / "capas/E_Alineadas"  # resultados función anterior
+    VIAS_VECTOR_PATH = media_root / "Vias_Total.shp" # desde modulo carga vias_invias
+    REGIONES_SHP_PATH = media_root / "regiones/regiones.shp" # acaban las regiones de colombia
     CSV_ATROPELLAMIENTOS_PATH = media_root / "out2_kr/hotspots.csv" # .csv de hotspot sacados desde el K-ripley
 
-    CARPETA_SALIDA = Path(media_root, 'modula_proceso', 'salida_Clip')
+    CARPETA_SALIDA = Path(media_root, 'modula_proceso', 'jacknife')
 
     CAMPO_REGION = "REGION" # campo de la capa de regiones
     BUFFER_M = 200.0 # este buffer se usa para que existaq un área de guarda 

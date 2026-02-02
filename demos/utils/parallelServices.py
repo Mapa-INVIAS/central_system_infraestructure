@@ -39,12 +39,6 @@ def pipeline_process(output_dir, input_name):
     excel_path = str(excel_path)
 
 
-    # excel_path = r'C:\Users\Alejo\Downloads\SUKUBUN_BASE_DE_DATOS.xlsx'
-    # roads_path = Path(media_root, 'modula_carga', 'vias_invias') / "vias_invias.shp"
-
-    # roads_path = r"C:\Users\Alejo\Desktop\wiki_test\test_invias_nelson\Vias_Total\Vias_Total.shp"
-
-
     if not excel_path:
         raise FileNotFoundError(f"No existe el Excel: {excel_path}")
     
@@ -139,22 +133,22 @@ def pipeline_process(output_dir, input_name):
     TARGET_IDS = [20, 25, 26, 36, 37, 39, 41, 42, 44, 47]
     BBOX = None
     FORMATO_SALIDA = "geojson"
-    # Downloadserver_REST(URL,
-    #                     SALIDA,
-    #                     TARGET_IDS,
-    #                     BBOX,
-    #                     CHUNK_INICIAL,
-    #                     MIN_CHUNK,
-    #                     TIMEOUT,
-    #                     REINTENTOS,
-    #                     USAR_TQDM,
-    #                     USAR_PARALELO,
-    #                     MAX_WORKERS,
-    #                     MAX_DEPTH,
-    #                     SLEEP,
-    #                     UMBRAL_PARALELO,
-    #                     FORMATO_SALIDA,
-    #                     WKID_SALIDA)
+    Downloadserver_REST(URL,
+                        SALIDA,
+                        TARGET_IDS,
+                        BBOX,
+                        CHUNK_INICIAL,
+                        MIN_CHUNK,
+                        TIMEOUT,
+                        REINTENTOS,
+                        USAR_TQDM,
+                        USAR_PARALELO,
+                        MAX_WORKERS,
+                        MAX_DEPTH,
+                        SLEEP,
+                        UMBRAL_PARALELO,
+                        FORMATO_SALIDA,
+                        WKID_SALIDA)
 
     if should_stop_pipeline():
         return {"status": "stopped", "stage": "RUNAP"}
@@ -165,22 +159,22 @@ def pipeline_process(output_dir, input_name):
     TARGET_IDS = [0]
     BBOX = None
     FORMATO_SALIDA = "shp"
-    # Downloadserver_REST(URL,
-    #                     SALIDA,
-    #                     TARGET_IDS,
-    #                     BBOX,
-    #                     CHUNK_INICIAL,
-    #                     MIN_CHUNK,
-    #                     TIMEOUT,
-    #                     REINTENTOS,
-    #                     USAR_TQDM,
-    #                     USAR_PARALELO,
-    #                     MAX_WORKERS,
-    #                     MAX_DEPTH,
-    #                     SLEEP,
-    #                     UMBRAL_PARALELO,
-    #                     FORMATO_SALIDA,
-    #                     WKID_SALIDA)
+    Downloadserver_REST(URL,
+                        SALIDA,
+                        TARGET_IDS,
+                        BBOX,
+                        CHUNK_INICIAL,
+                        MIN_CHUNK,
+                        TIMEOUT,
+                        REINTENTOS,
+                        USAR_TQDM,
+                        USAR_PARALELO,
+                        MAX_WORKERS,
+                        MAX_DEPTH,
+                        SLEEP,
+                        UMBRAL_PARALELO,
+                        FORMATO_SALIDA,
+                        WKID_SALIDA)
     
     if should_stop_pipeline():
         return {"status": "stopped", "stage": "IDEAM"}
@@ -195,12 +189,12 @@ def pipeline_process(output_dir, input_name):
     BASE_URL = "https://bart.ideam.gov.co/cneideam/Capasgeo"
     SALIDA = output_dir / "C_Raster"
     NOMBRE_FINAL = "Bosque_No_Bosque.tif"
-    # DownloadBosqueNoBosque(SALIDA,
-    #                     ANIO_MAX,
-    #                     ANIO_MIN,
-    #                     TIMEOUT,
-    #                     BASE_URL,
-    #                     NOMBRE_FINAL)
+    DownloadBosqueNoBosque(SALIDA,
+                        ANIO_MAX,
+                        ANIO_MIN,
+                        TIMEOUT,
+                        BASE_URL,
+                        NOMBRE_FINAL)
     
     if should_stop_pipeline():
         return {"status": "stopped", "stage": "OSM"}
@@ -225,15 +219,15 @@ def pipeline_process(output_dir, input_name):
     CARPETA_SALIDA = output_dir / "B_Vectoriales"
     logfile= Path(CARPETA_SALIDA) / "log_osm.txt"
     NOMBRE_SALIDA = "Vias.shp"
-    # DownloadOSMVias(CARPETA_SALIDA,
-    #                 NOMBRE_SALIDA,
-    #                 BBOX_COLOMBIA,
-    #                 HIGHWAY_TIPOS,
-    #                 overpass_url,
-    #                 timeout,
-    #                 reintentos,
-    #                 usar_tqdm,
-    #                 logfile)
+    DownloadOSMVias(CARPETA_SALIDA,
+                    NOMBRE_SALIDA,
+                    BBOX_COLOMBIA,
+                    HIGHWAY_TIPOS,
+                    overpass_url,
+                    timeout,
+                    reintentos,
+                    usar_tqdm,
+                    logfile)
 
     # ETAPA ALISTAMIENTO VECTORIALES
     # configuracion inicial union
@@ -243,10 +237,10 @@ def pipeline_process(output_dir, input_name):
     # Ejecución Unión
     CARPETA_ENTRADA = output_dir / "A_paraUnirAguas"
     SALIDA = output_dir / "B_Vectoriales/CAgua.shp"
-    # UnirShapefile(CARPETA_ENTRADA,
-    #               SALIDA,
-    #               BUFFER_METROS,
-    #               MAX_WORKERS)
+    UnirShapefile(CARPETA_ENTRADA,
+                  SALIDA,
+                  BUFFER_METROS,
+                  MAX_WORKERS)
    
     # ETAPA RASTERIZADO
     # configuracion inicial Rasterizado
@@ -255,10 +249,10 @@ def pipeline_process(output_dir, input_name):
     # Ejecución Rasterizado
     CARPETA_SHP = output_dir / "B_Vectoriales"
     CARPETA_SALIDA = output_dir / "C_Raster"
-    # RasterizarCarpetaSHP(CARPETA_SHP,
-    #                      input_name,
-    #                      CARPETA_SALIDA,
-    #                      PIXEL_METROS)
+    RasterizarCarpetaSHP(CARPETA_SHP,
+                         input_name,
+                         CARPETA_SALIDA,
+                         PIXEL_METROS)
 
     # ETAPA CALCULO DE DISTANCIA EUCLIDEANA
     # configuracion inicial Rasterizado
@@ -267,10 +261,10 @@ def pipeline_process(output_dir, input_name):
     # Ejecución Distancia Euclideana
     CARPETA_RASTER = output_dir / "C_Raster"
     CARPETA_SALIDA = output_dir / "D_Distancia"
-    # DistanciaEuclidiana(CARPETA_RASTER,
-    #                     input_name,
-    #                     CARPETA_SALIDA,
-    #                     VALOR_FUENTE)
+    DistanciaEuclidiana(CARPETA_RASTER,
+                        input_name,
+                        CARPETA_SALIDA,
+                        VALOR_FUENTE)
     
     # return {
     #     "status": "ok",

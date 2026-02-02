@@ -546,7 +546,7 @@ def tiff_geo(request, project_name):
 
 def process_actions(request):
 
-    root_dir = Path(settings.MEDIA_ROOT, 'modula_proceso', 'jacknife')
+    root_dir = Path(settings.MEDIA_ROOT, 'modula_proceso')
 
     subdirectories = []
 

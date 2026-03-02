@@ -1,9 +1,5 @@
-import time, os, json, rasterio, traceback, ee, requests, json
+import time, os, json, rasterio, traceback, ee, requests, json, logging, shutil, datetime
 import geopandas as gpd
-import logging
-import os
-import shutil
-import datetime
 logger = logging.getLogger(__name__)
 ###############################################################
 from datetime import date, timedelta
@@ -87,6 +83,28 @@ def ejecutar_proceso(request):
     resultado = proceso_largo()
     return HttpResponse(f"Resultado: {resultado}")
 
+def safe_sender_telegram(message: str):
+    """
+    Envía un mensaje a Telegram sin depender de request.user.
+    """
+    try:
+        # Tu token del bot de Telegram
+        TELEGRAM_TOKEN = settings.BOT_TOKEN
+        # El chat_id del grupo o usuario donde quieres enviar el mensaje
+        CHAT_ID = settings.BOT_CHAT_ID
+
+        url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+        payload = {
+            "chat_id": CHAT_ID,
+            "text": message,
+            "parse_mode": "HTML"  # opcional, para dar formato
+        }
+
+        response = requests.post(url, data=payload)
+        response.raise_for_status()
+
+    except Exception as e:
+        print(f"Error enviando mensaje a Telegram: {e}")
 
 #=========================================================================#
 #=========================================================================#
@@ -109,6 +127,7 @@ def sk_login(request):
             messages.error(request, 'Credenciales inválidas')
     return render(request, "login.html")
 
+@login_required(login_url='db_login', redirect_field_name=None)
 def sk_logout(request):
     logout(request)
     return redirect('db_login')
@@ -147,6 +166,7 @@ def safe_send_telegram(message: str):
 # ======================================================================= #
 ###########################################################################
 
+# Interfaz gráfica de carga
 @login_required(login_url='db_login', redirect_field_name=None)
 def inputs_gee(request):
     return render(request, 'inputs_gee.html')
@@ -255,7 +275,7 @@ def run_pipeline(request):
 
     if not input_name.exists():
         
-        safe_send_telegram( 
+        safe_sender_telegram( 
             f"❌ Error: No se encontró el archivo\n\n {input_name}" 
         )
 
@@ -283,7 +303,7 @@ def run_pipeline(request):
             # f"Continue el proceso en ({full_url})"
         )
 
-        safe_send_telegram(message)
+        safe_sender_telegram(message)
 
     except Exception as e:
 
@@ -332,13 +352,6 @@ def stop_services(request):
         )
 
 
-# try:
-#     ee.Initialize()
-# except Exception as e:
-#     ee.Authenticate()
-#     ee.Initialize()
-
-
 ###########################################################################
 # ======================================================================= #
 #
@@ -348,7 +361,6 @@ def stop_services(request):
 ###########################################################################
 
 # Sukubun database
-import os
 
 @login_required(login_url='db_login', redirect_field_name=None)
 def preprocess_actions(request):
@@ -416,22 +428,53 @@ except ImportError:
 from rpy2.robjects import default_converter
 from rpy2.robjects.conversion import localconverter
 
-
 # @csrf_exempt
+# User Visual interfaces
 @login_required(login_url='db_login', redirect_field_name=None)
-@require_POST
+def process_actions(request):
 
+    root_dir = Path(settings.MEDIA_ROOT, 'modula_proceso')
+
+    subdirectories = []
+
+    for directory in os.listdir(root_dir):
+        ruta = os.path.join(root_dir, directory)
+        if os.path.isdir(ruta):
+            fecha_actual = datetime.datetime.fromtimestamp(os.path.getmtime(ruta))
+            subdirectories.append(
+                {
+                    'name': directory,
+                    'update': fecha_actual.strftime("%Y-%m-%d"),
+                    'uptime': fecha_actual.strftime("%H:%M:%S"),
+                }
+            )     
+
+    return render(request, 'new_map.html', {'subdirectories': subdirectories})
+
+@require_POST
+@login_required(login_url='db_login', redirect_field_name=None)
 def run_centralModelProcess(request):
     if request.method != "POST":
         return HttpResponseNotAllowed(["POST"])
     
     try:
         centralModelProcess()
+        messages = (
+            f"✅ El proceso de MAXENT ha finalizado con éxito"
+            f"Continua el proceso por medio del menú"
+        )
+        safe_sender_telegram(messages)
         return JsonResponse({
             'status': 'se ejecuto maxent'
         })
     
     except Exception as e:
+        error_message = (
+          f"❌ Error: Ha fallado el proceso"
+          f"Error: {str(e)}"
+        )
+        safe_sender_telegram(error_message)
+
         return JsonResponse({
             "status": "error",
             "message": str(e),
@@ -448,6 +491,7 @@ def run_centralModelProcess(request):
 ###########################################################################
 from .utils.generateMap import PostProcesamientoMaxEnt
 
+@login_required(login_url='db_login', redirect_field_name=None)
 def run_generateMap(request):
 
     today = date.today()
@@ -458,7 +502,8 @@ def run_generateMap(request):
     jacknife_dir = Path(base_dir, 'modula_proceso', 'jacknife')
 
     # Lista de regiones
-    regiones = ["a_Amazonas", "b_Orinoquia", "c_Pacifico", "d_Caribe", "e_Andina"]
+    # regiones = ["AMAZONÍA", "ORINOQUÍA", "PACÍFICA", "CARIBE", "ANDINA"]
+    regiones = ["AMAZONÍA", "ORINOQUÍA", "PACÍFICA", "CARIBE", "ANDINA"]
 
     # Parámetros
     min_area_m2 = 100
@@ -490,6 +535,10 @@ def run_generateMap(request):
                 campo_rango
             )
 
+            messages = ( f"✅ Región {region}: Archivos generados correctamente.\n"
+                         f"Directorio de salida: {carpeta_salida}" )
+            safe_sender_telegram(messages)
+
             resultados.append({
                 "region": region,
                 "status": "ok",
@@ -497,6 +546,10 @@ def run_generateMap(request):
             })
 
         except Exception as e:
+
+            error_msg = f"❌ Región {region}: Error en el proceso.\nDetalle: {str(e)}"
+            safe_sender_telegram(error_msg)
+
             resultados.append({
                 "region": region,
                 "status": "error",
@@ -507,6 +560,7 @@ def run_generateMap(request):
 
 
 # Tranformar de tiff a geojson
+@login_required(login_url='db_login', redirect_field_name=None)
 def tiff_geo(request, project_name):
     media_folder  = os.path.join(settings.MEDIA_ROOT, 'maxent_projects', project_name, 'RasterResult', 'resultado_maxent.tif')
 
@@ -542,29 +596,9 @@ def tiff_geo(request, project_name):
 # ==================================================================== #
 # ==================================================================== #
 
-# User Visual interfaces
+# User visual interface
 
-def process_actions(request):
-
-    root_dir = Path(settings.MEDIA_ROOT, 'modula_proceso')
-
-    subdirectories = []
-
-    for directory in os.listdir(root_dir):
-        ruta = os.path.join(root_dir, directory)
-        if os.path.isdir(ruta):
-            fecha_actual = datetime.datetime.fromtimestamp(os.path.getmtime(ruta))
-            subdirectories.append(
-                {
-                    'name': directory,
-                    'update': fecha_actual.strftime("%Y-%m-%d"),
-                    'uptime': fecha_actual.strftime("%H:%M:%S"),
-                }
-            )     
-
-    return render(request, 'new_map.html', {'subdirectories': subdirectories})
-
-
+@login_required(login_url='db_login', redirect_field_name=None)
 def generate_map(request):
 
     root_dir = Path(settings.MEDIA_ROOT, 'modula_proceso', 'maxent_invias')
@@ -585,8 +619,7 @@ def generate_map(request):
 
     return render(request, 'data_map.html', {'subdirectories': subdirectories})
 
-
-
+@login_required(login_url='db_login', redirect_field_name=None)
 def listdownload_map(request):
     media_root = Path(settings.MEDIA_ROOT, 'modula_postproceso')
 
@@ -610,19 +643,32 @@ def listdownload_map(request):
 
     return render(request, 'downloadmap.html', {"submedia_directories": submedia_directories})
 
-
+@login_required(login_url='db_login', redirect_field_name=None)
 def download_map(request, name_subdir):
-    media_root = Path(settings.MEDIA_ROOT, 'modula_postproceso')
-    ruta = os.path.join(media_root, name_subdir)
+    try:
+        media_root = Path(settings.MEDIA_ROOT, 'modula_postproceso')
+        ruta = os.path.join(media_root, name_subdir)
 
-    if not os.path.exists(ruta):
-        raise Http404(f'No existe el directorio {name_subdir}')
-    
-    zip_file = f"/tmp/{name_subdir}.zip" 
-    shutil.make_archive(zip_file.replace(".zip", ""), 'zip', ruta)
-    
-    return FileResponse(
-        open(zip_file, 'rb'),
-        as_attachment=True,
-        filename=f'{name_subdir}.zip'
-    )
+        if not os.path.exists(ruta):
+            raise Http404(f'No existe el directorio {name_subdir}')
+        
+        zip_file = f"/tmp/{name_subdir}.zip" 
+        shutil.make_archive(zip_file.replace(".zip", ""), 'zip', ruta)
+
+        safe_sender_telegram(
+            f"✅ El mapa {name_subdir} fue comprimido y está listo para descargar."
+        )
+
+        return FileResponse(
+            open(zip_file, 'rb'),
+            as_attachment=True,
+            filename=f'{name_subdir}.zip'
+        )
+
+    except Exception as e:
+
+        safe_sender_telegram(
+            f"❌ Error al generar el mapa {name_subdir}.\nDetalle: {str(e)}"
+        )
+        raise
+

@@ -4,54 +4,50 @@ from pathlib import Path
 from django.conf import settings
 from tqdm import tqdm
 
-def mover_tifs():
-    """
-    Mueve archivos .tif desde modula_carga y modula_servicios
-    hacia un único directorio modula_proceso/EXPORTS_TIF.
-    Retorna un resumen de los archivos copiados.
-    """
-    media_root = Path(settings.MEDIA_ROOT)
+class MoverTifs:
+    
+    def __init__(self):
+        self.resultados = []
 
-    # Definir rutas
-    media_carga = media_root / 'modula_carga' / 'MOSAICS' / 'EXPORTS'
-    media_servicios = media_root / 'modula_servicios' / 'AutoINVIAS'
-    output_export = media_root / 'modula_proceso' / 'EXPORTS_TIF'
-    output_export.mkdir(parents=True, exist_ok=True)
+    def run(self):
+        media_root = Path(settings.MEDIA_ROOT)
+        media_carga = media_root / 'modula_carga' / 'MOSAICS' / 'EXPORTS'
+        media_servicios = media_root / 'modula_servicios' / 'AutoINVIAS'
+        output_export = media_root / 'modula_proceso' / 'EXPORTS_TIF'
+        output_export.mkdir(parents=True, exist_ok=True)
 
-    extract_folders = [media_carga, media_servicios]
-    resultados = []
-    archivos_tif = []
+        extract_folders = [media_carga, media_servicios]
+        archivos_tif = []
 
-    # Recolectar todos los archivos primero
-    for folder in extract_folders:
-        if not folder.exists():
-            resultados.append({"folder": str(folder), "status": "no encontrado"})
-            continue
+        for folder in extract_folders:
+            if not folder.exists():
+                self.resultados.append({"folder": str(folder), "status": "no encontrado"})
+                continue
 
-        for root, dirs, files in os.walk(folder):
-            for file in files:
-                if file.lower().endswith('.tif'):
-                    full_path = Path(root) / file
-                    archivos_tif.append(full_path)
+            for root, dirs, files in os.walk(folder):
+                for file in files:
+                    if file.lower().endswith('.tif'):
+                        full_path = Path(root) / file
+                        archivos_tif.append(full_path)
 
-    # Iterar con tqdm mostrando progreso
-    for full_path in tqdm(archivos_tif, desc="Copiando archivos .tif"):
-        destino = output_export / full_path.name   
-        try:
-            shutil.copy(full_path, destino)
-            resultados.append({
-                "origen": str(full_path),
-                "destino": str(destino),
-                "status": "copiado"
-            })
-        except Exception as e:
-            resultados.append({
-                "origen": str(full_path),
-                "destino": str(destino),
-                "status": f"error: {e}"
-            })
+        for full_path in tqdm(archivos_tif, desc="Copiando archivos .tif"):
+            destino = output_export / full_path.name
+            try:
+                shutil.copy(full_path, destino)
+                self.resultados.append({
+                    "origen": str(full_path),
+                    "destino": str(destino),
+                    "status": "copiado"
+                })
+            except Exception as e:
+                self.resultados.append({
+                    "origen": str(full_path),
+                    "destino": str(destino),
+                    "status": f"error: {e}"
+                })
 
-    return resultados
+        return self.resultados
+
 
 
 # import os

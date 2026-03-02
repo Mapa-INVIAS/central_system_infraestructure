@@ -20,14 +20,13 @@ urlpatterns = [
     #==============   Interfaces de servicios  =============#
     #########################################################
     path('usuario/servicios-paralelos', views.preprocess_actions, name="preprocess_actions"),
-    path('pipeline/run', views.run_pipeline, name="run_pipeline"),
     path("update/sukubun/", views.dbSukubun, name="db_sukubun"),
+    path('pipeline/run', views.run_pipeline, name="run_pipeline"),
     path("detener/services/", views.stop_services, name="stop_services"),
     #########################################################
     #==============   Interfaces de modelo  ================#
     #########################################################
     path('usuario/modelo/', views.process_actions, name="process_actions"),
-    # path('maxent/run/', views.model_maxent, name="ejecutar_maxent"),
     path('central/process', views.run_centralModelProcess, name="run_centralprocess"),
     #########################################################
     #============   Interfaces de posproceso  ==============#

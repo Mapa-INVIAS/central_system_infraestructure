@@ -13,6 +13,7 @@ from .services.A_download_OSM import DownloadOSMVias
 from .services.B_Union import UnirShapefile
 from .services.C_Rasterizar import RasterizarCarpetaSHP
 from .services.D_Dist_Euclideana import DistanciaEuclidiana
+from .services.G_downloadmap_INVIAS import DescargaViasIGAC
 
 from .kripley02 import KRipley_HS
 ####################################################################
@@ -24,11 +25,29 @@ def pipeline_process(output_dir, input_name):
 
     if should_stop_pipeline():
         return {"status": "stopped", "stage": "Sukubun"}
+    
+    media_root = Path(settings.MEDIA_ROOT)
+    
+    # ============================
+    # Generar mapa de vías
+    # ============================
+
+    URL = "https://mapas2.igac.gov.co/server/rest/services/carto/carto100000colombia2019/MapServer"
+    CARPETA_MAPA = Path(media_root, 'modula_servicios', 'Vias_Total')
+    ARCHIVO_SALIDA = "Vias_Total.shp"
+
+    mapa_rutas = DescargaViasIGAC(
+        url=URL,
+        carpeta_salida=CARPETA_MAPA,
+        nombre_salida=ARCHIVO_SALIDA
+    )
+
+    mapa_rutas.ejecutar()
 
     # ============================
     # ETAPA K-Ripley
     # ============================
-    media_root = Path(settings.MEDIA_ROOT)
+    
     uploads_folder =  Path(media_root, 'modula_servicios', 'sukubun')
 
     excel_files = list(uploads_folder.glob("*.xlsx")) + list(uploads_folder.glob("*.xls"))
@@ -43,14 +62,15 @@ def pipeline_process(output_dir, input_name):
         raise FileNotFoundError(f"No existe el Excel: {excel_path}")
     
     # Detectar extensión y elegir motor 
-    if excel_path.endswith(".xlsx"): 
+    if excel_path.endswith(".xlsx"):
         df = pd.read_excel(excel_path, sheet_name="SUKUBUN", engine="openpyxl") 
     elif excel_path.endswith(".xls"): 
-        df = pd.read_excel(excel_path, sheet_name="SUKUBUN", engine="xlrd") 
+        df = pd.read_excel(excel_path, sheet_name="SUKUBUN", engine="xlrd")
     else: 
         raise ValueError(f"Formato de archivo no soportado: {excel_path}")
 
-    roads_path = Path(settings.BASE_DIR, 'static', 'backend') / 'geodata' / 'Vias_Total' / 'Vias_Total.shp'
+    # roads_path = Path(settings.BASE_DIR, 'static', 'backend') / 'geodata' / 'Vias_Total' / 'Vias_Total.shp'
+    roads_path = Path(media_root, 'modula_servicios') / 'Vias_Total' / 'Vias_Total.shp'
 
     if not roads_path:
         raise FileNotFoundError(f"No existe el SHP de vías: {roads_path}")

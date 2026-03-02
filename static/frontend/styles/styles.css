@@ -428,6 +428,21 @@ button.close-btn {
   border-radius: 5px;
 }
 
+a.view_map {
+  margin: 1rem auto;
+  background-color: #3a86fe;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: background 0.3s ease;
+  text-decoration: none;
+  font-weight: lighter;
+}
+
+a.view_map:hover {
+  opacity: 0.8;
+}
+
 /* Tabla */
 table { 
   width: 100%; 

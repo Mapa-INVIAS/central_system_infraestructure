@@ -7,7 +7,7 @@ from . import views
 urlpatterns = [
     path('', views.landinPage, name="landing"),
     path('map', views.mapInterface, name='map'),
-    
+    path('analysis', views.mapAnalysis, name='analysis'),
 ]
 
 # urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

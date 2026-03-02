@@ -7,5 +7,8 @@ def landinPage(request):
 def mapInterface(request):
     return render(request, 'map.html')
 
+def mapAnalysis(request):
+    return render(request, 'analysis.html')
+
 
 
